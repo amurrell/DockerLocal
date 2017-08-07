@@ -1,0 +1,141 @@
+#!/bin/bash
+
+# start with default port value and name
+WEB_PORT=3000
+DEFAULT_SITES_FILE="../../../ProxyLocal/sites.yml"
+
+# process arguments
+while getopts ":pnsd" opt; do
+    P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
+    N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
+    S=$(sed -e 's#.*\-s=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
+    D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
+    K=$(sed -e 's#.*\-k=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
+    M=$(sed -e 's#.*\-m=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
+    H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
+    
+    # p
+    if [ "$opt" ] && [ ! "$P" == "$1$2$3$4$5$6$7" ]; then
+        WEB_PORT=$P
+    fi
+
+    # n
+    if [ "$opt" ] && [ ! "$N" == "$1$2$3$4$5$6$7" ]; then
+        NAME=$N
+    fi
+
+    # s 
+    if [ "$opt" ] && [ ! "$S" == "$1$2$3$4$5$6$7" ]; then
+        SITES_FILE=$S
+    fi
+
+    # d 
+    if [ "$opt" ] && [ ! "$D" == "$1$2$3$4$5$6$7" ]; then
+        SITE_DOWN=$D
+    fi
+
+    # k
+    if [ "$opt" ] && [ ! "$K" == "$1$2$3$4$5$6$7" ]; then
+        NGROK=$K
+    fi
+
+    # m 
+    if [ "$opt" ] && [ ! "$M" == "$1$2$3$4$5$6$7" ]; then
+        SITE_DB=$M
+    fi
+
+    # h
+    if [ "$opt" ] && [ ! "$H" == "$1$2$3$4$5$6$7" ]; then
+        SITE_SSH=$H
+    fi
+done
+
+# Allow short value "~" to indicate default sites file
+if [ "$SITES_FILE" == "~" ]; then
+    SITES_FILE="${DEFAULT_SITES_FILE}"
+fi
+
+# Stop if sites file is specified but doesn't exist at path
+
+if [ "$SITES_FILE" ] && [ ! -f $SITES_FILE ]; then
+    printf "Your sites.yml file doesn't exist.\n"
+    exit 1
+fi
+
+# Complain that specifying a name, but not a sites file.
+
+if [ "$NAME" ] && [ ! "$SITES_FILE" ]; then
+    printf "Consider specifying a sites file if using a domain.\n"
+fi
+
+# Find the port using the sites.yml and project name
+
+if [ "$SITES_FILE" ]; then
+
+    declare -A SITES
+    parse_yaml() {
+       local prefix=$2
+       local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+       sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+            -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+       awk -F$fs '{
+          indent = length($1)/2;
+          vname[indent] = $2;
+          for (i in vname) {if (i > indent) {delete vname[i]}}
+          if (length($3) > 0) {
+             vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+             printf("%s[%s]=\"%s\"\n", "SITES", $2, $3);
+          }
+       }'
+    }
+
+    eval $(parse_yaml $SITES_FILE)
+
+    for i in "${!SITES[@]}"
+    do
+        if [ "${SITES[$i]}" == "${NAME}" ]; then
+            WEB_PORT="${i}"
+        fi
+    done
+fi
+
+# Use variables to create docker-compose custom
+
+FILE="../docker-compose-custom.yml"
+MYSQL_PORT=$((3306 + $WEB_PORT))
+MEMCACHED_PORT=$((11211 + $WEB_PORT))
+DOCKER_NAME=$(echo "dockerlocal${WEB_PORT}")
+
+# Final checks for behavior
+
+## SHUT DOWN
+if [ "$SITE_DOWN" ]; then
+    sudo docker-compose -p "${DOCKER_NAME}" -f "${FILE}" down
+    exit 1
+fi
+
+## SSH into a container
+if [ "$SITE_SSH" ]; then
+    sudo docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash
+    exit 1
+fi
+
+## NGROK
+if [ "$NGROK" ]; then
+    ngrok http 127.0.0.1:"${WEB_PORT}"
+    exit 1
+fi
+
+## UP/BUILD
+if [ "$WEB_PORT" == "3000" ]; then
+    printf "No port specified, using default 3000. Next instance of DockerLocal will need a port specified: ./site-up -p=3001\n"
+fi
+
+rm $FILE
+cp ../docker-compose.yml $FILE
+sed -i "s/WEB_PORT/${WEB_PORT}/g;" $FILE
+sed -i "s/MYSQL_PORT/${MYSQL_PORT}/g;" $FILE
+sed -i "s/MEMCACHED_PORT/${MEMCACHED_PORT}/g;" $FILE
+
+sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
+sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d

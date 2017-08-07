@@ -1,0 +1,26 @@
+web:
+    build: .
+    ports:
+        - "3001:8080"
+    volumes:
+        - ../:/var/www/site
+    links:
+        - mysql
+        - memcached
+    expose:
+        - "3001"
+
+mysql:
+    image: mysql
+    ports:
+        - "6307:3306"
+    environment:
+        MYSQL_ROOT_PASSWORD: 1234
+    volumes:
+        - ./data/dumps:/docker-entrypoint-initdb.d
+        - ./data/custom:/etc/mysql/conf.d
+        
+memcached:
+  image: memcached
+  ports:
+    - "14212:11211"

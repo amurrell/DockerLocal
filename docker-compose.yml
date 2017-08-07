@@ -1,0 +1,26 @@
+web:
+    build: .
+    ports:
+        - "WEB_PORT:8080"
+    volumes:
+        - ../:/var/www/site
+    links:
+        - mysql
+        - memcached
+    expose:
+        - "WEB_PORT"
+
+mysql:
+    image: mysql
+    ports:
+        - "MYSQL_PORT:3306"
+    environment:
+        MYSQL_ROOT_PASSWORD: 1234
+    volumes:
+        - ./data/dumps:/docker-entrypoint-initdb.d
+        - ./data/custom:/etc/mysql/conf.d
+        
+memcached:
+  image: memcached
+  ports:
+    - "MEMCACHED_PORT:11211"

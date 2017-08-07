@@ -1,0 +1,10 @@
+#!/bin/bash
+
+TEST_EXISTS=$(ngrok -v)
+EXISTS_STRING='ngrok version'
+if [[ ! "${TEST_EXISTS}" == *"${EXISTS_STRING}"* ]]; then
+   printf "You need ngrok. Download it. Unzip to /Applications/ngrok. cd /usr/local/bin; ln -s /Applications/ngrok ngrok\n"
+   exit 1
+fi
+
+./site-up "$1$2$3$4" -k=true
