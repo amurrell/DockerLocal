@@ -13,7 +13,7 @@ while getopts ":pnsd" opt; do
     K=$(sed -e 's#.*\-k=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
     M=$(sed -e 's#.*\-m=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
     H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
-    
+
     # p
     if [ "$opt" ] && [ ! "$P" == "$1$2$3$4$5$6$7" ]; then
         WEB_PORT=$P
@@ -24,12 +24,12 @@ while getopts ":pnsd" opt; do
         NAME=$N
     fi
 
-    # s 
+    # s
     if [ "$opt" ] && [ ! "$S" == "$1$2$3$4$5$6$7" ]; then
         SITES_FILE=$S
     fi
 
-    # d 
+    # d
     if [ "$opt" ] && [ ! "$D" == "$1$2$3$4$5$6$7" ]; then
         SITE_DOWN=$D
     fi
@@ -39,7 +39,7 @@ while getopts ":pnsd" opt; do
         NGROK=$K
     fi
 
-    # m 
+    # m
     if [ "$opt" ] && [ ! "$M" == "$1$2$3$4$5$6$7" ]; then
         SITE_DB=$M
     fi
@@ -64,8 +64,13 @@ fi
 
 # Complain that specifying a name, but not a sites file.
 
-if [ "$NAME" ] && [ ! "$SITES_FILE" ]; then
-    printf "Consider specifying a sites file if using a domain.\n"
+if [ "$NAME" ] && [ ! "$SITES_FILE" ] && [ ! -f "${DEFAULT_SITES_FILE}" ]; then
+    printf "Consider specifying an existing sites file if using a domain. Using default port: 3000\n"
+fi
+
+if [ "$NAME" ] && [ ! "$SITES_FILE" ] && [ -f "${DEFAULT_SITES_FILE}" ]; then
+    printf "Using default relative path for sites: ${DEFAULT_SITES_FILE}\n"
+    SITES_FILE="${DEFAULT_SITES_FILE}"
 fi
 
 # Find the port using the sites.yml and project name
@@ -133,9 +138,10 @@ fi
 
 rm $FILE
 cp ../docker-compose.yml $FILE
-sed -i "s/WEB_PORT/${WEB_PORT}/g;" $FILE
-sed -i "s/MYSQL_PORT/${MYSQL_PORT}/g;" $FILE
-sed -i "s/MEMCACHED_PORT/${MEMCACHED_PORT}/g;" $FILE
+sed -i'.bak' "s/WEB_PORT/${WEB_PORT}/g;" $FILE
+sed -i'.bak' "s/MYSQL_PORT/${MYSQL_PORT}/g;" $FILE
+sed -i'.bak' "s/MEMCACHED_PORT/${MEMCACHED_PORT}/g;" $FILE
+rm "${FILE}.bak"
 
 sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
 sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
