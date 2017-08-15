@@ -1,0 +1,8 @@
+# Create a database.yml in DockerLocal to override the global configurations from ProxyLocal
+# Port as a key is used for database 'name'
+databases:
+    host:
+    user:
+    pass:
+    port: 3306
+    80: example_com

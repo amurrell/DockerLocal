@@ -9,7 +9,17 @@ web:
         - memcached
     expose:
         - "WEB_PORT"
-
+    environment:
+        APP_WP_DB_NAME: DATABASE_NAME
+        APP_WP_DB_USER: root
+        APP_WP_DB_PASS: 1234
+        APP_WP_DB_PASSWORD: 1234
+        APP_WP_DB_HOST: DATABASE_HOST:DATABASE_PORT
+        DL_DB_NAME: DATABASE_NAME
+        DL_DB_USER: root
+        DL_DB_PASS: 1234
+        DL_DB_HOST: DATABASE_HOST
+        DL_DB_PORT: DATABASE_PORT
 mysql:
     image: mysql
     ports:
@@ -19,7 +29,7 @@ mysql:
     volumes:
         - ./data/dumps:/docker-entrypoint-initdb.d
         - ./data/custom:/etc/mysql/conf.d
-        
+
 memcached:
   image: memcached
   ports:

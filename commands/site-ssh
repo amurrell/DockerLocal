@@ -1,10 +1,10 @@
 #!/bin/bash
 
-H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
+H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
 
-if [ "$H" == "$1$2$3$4$5$6$7" ]; then
+if [ "$H" == "$1$2$3$4$5$6$7$8" ]; then
     printf "Need to specify a service to ssh into: mysql, web, memcached. Eg. -h=web\n"
     exit 1
 fi
 
-./site-up "$1$2$3$4$5$6$7"
+./site-up "$1$2$3$4$5$6$7$8"

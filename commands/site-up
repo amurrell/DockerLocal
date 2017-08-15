@@ -3,50 +3,58 @@
 # start with default port value and name
 WEB_PORT=3000
 DEFAULT_SITES_FILE="../../../ProxyLocal/sites.yml"
+DEFAULT_PROXY_DATABASES_FILE="../../../ProxyLocal/databases.yml"
+DEFAULT_DOCKER_DATABASES_FILE="../databases.yml"
 
 # process arguments
-while getopts ":pnsd" opt; do
-    P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
-    N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
-    S=$(sed -e 's#.*\-s=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
-    D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
-    K=$(sed -e 's#.*\-k=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
-    M=$(sed -e 's#.*\-m=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
-    H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7")
+while getopts ":pnsdkmhr" opt; do
+    P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+    N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+    S=$(sed -e 's#.*\-s=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+    D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+    K=$(sed -e 's#.*\-k=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+    M=$(sed -e 's#.*\-m=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+    H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+    R=$(sed -e 's#.*\-r=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
 
     # p
-    if [ "$opt" ] && [ ! "$P" == "$1$2$3$4$5$6$7" ]; then
+    if [ "$opt" ] && [ ! "$P" == "$1$2$3$4$5$6$7$8" ]; then
         WEB_PORT=$P
     fi
 
     # n
-    if [ "$opt" ] && [ ! "$N" == "$1$2$3$4$5$6$7" ]; then
+    if [ "$opt" ] && [ ! "$N" == "$1$2$3$4$5$6$7$8" ]; then
         NAME=$N
     fi
 
     # s
-    if [ "$opt" ] && [ ! "$S" == "$1$2$3$4$5$6$7" ]; then
+    if [ "$opt" ] && [ ! "$S" == "$1$2$3$4$5$6$7$8" ]; then
         SITES_FILE=$S
     fi
 
     # d
-    if [ "$opt" ] && [ ! "$D" == "$1$2$3$4$5$6$7" ]; then
+    if [ "$opt" ] && [ ! "$D" == "$1$2$3$4$5$6$7$8" ]; then
         SITE_DOWN=$D
     fi
 
     # k
-    if [ "$opt" ] && [ ! "$K" == "$1$2$3$4$5$6$7" ]; then
+    if [ "$opt" ] && [ ! "$K" == "$1$2$3$4$5$6$7$8" ]; then
         NGROK=$K
     fi
 
     # m
-    if [ "$opt" ] && [ ! "$M" == "$1$2$3$4$5$6$7" ]; then
+    if [ "$opt" ] && [ ! "$M" == "$1$2$3$4$5$6$7$8" ]; then
         SITE_DB=$M
     fi
 
     # h
-    if [ "$opt" ] && [ ! "$H" == "$1$2$3$4$5$6$7" ]; then
+    if [ "$opt" ] && [ ! "$H" == "$1$2$3$4$5$6$7$8" ]; then
         SITE_SSH=$H
+    fi
+
+    # r
+    if [ "$opt" ] && [ ! "$R" == "$1$2$3$4$5$6$7$8" ]; then
+        REFRESH_DB=$R
     fi
 done
 
@@ -104,6 +112,50 @@ if [ "$SITES_FILE" ]; then
     done
 fi
 
+if [ -f "${DEFAULT_PROXY_DATABASES_FILE}" ]; then
+  DB_FILE="${DEFAULT_PROXY_DATABASES_FILE}"
+fi
+
+if [ -f "${DEFAULT_DOCKER_DATABASES_FILE}" ]; then
+  DB_FILE="${DEFAULT_DOCKER_DATABASES_FILE}"
+fi
+
+if [ "DB_FILE" ]; then
+    declare -A DBS
+    parse_yaml() {
+       local prefix=$2
+       local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+       sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+            -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+       awk -F$fs '{
+          indent = length($1)/2;
+          vname[indent] = $2;
+          for (i in vname) {if (i > indent) {delete vname[i]}}
+          if (length($3) > 0) {
+             vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+             printf("%s[%s]=\"%s\"\n", "DBS", $2, $3);
+          }
+       }'
+    }
+
+    eval $(parse_yaml $DB_FILE)
+
+    DB_NAME="${DBS[${WEB_PORT}]}"
+    DB_HOST="${DBS['host']}"
+    DB_USER="${DBS['user']}"
+    DB_PASS="${DBS['pass']}"
+    DB_PORT="${DBS['port']}"
+    DB_SAVE_FILE="../data/dumps/${DB_NAME}.sql"
+fi
+
+if [ -z "$DB_HOST" ] || [ -z "$DB_NAME" ] || [ -z "$DB_PASS" ] || [ -z "$DB_USER" ] || [ -z "$DB_PORT" ]; then
+    INCOMPLETE_DB_CONFIG=true
+fi
+
+if [ ! -f "$DB_SAVE_FILE" ] || [ "$REFRESH_DB" ]; then
+    DO_DB_REFRESH=true
+fi
+
 # Use variables to create docker-compose custom
 
 FILE="../docker-compose-custom.yml"
@@ -141,7 +193,30 @@ cp ../docker-compose.yml $FILE
 sed -i'.bak' "s/WEB_PORT/${WEB_PORT}/g;" $FILE
 sed -i'.bak' "s/MYSQL_PORT/${MYSQL_PORT}/g;" $FILE
 sed -i'.bak' "s/MEMCACHED_PORT/${MEMCACHED_PORT}/g;" $FILE
+
+sed -i'.bak' "s/DATABASE_NAME/${DB_NAME}/g;" $FILE
+sed -i'.bak' "s/DATABASE_HOST/${DOCKER_NAME}_mysql_1/g;" $FILE
+sed -i'.bak' "s/DATABASE_PORT/${MYSQL_PORT}/g;" $FILE
 rm "${FILE}.bak"
+
+## CHECK DB (First time use)
+if [ "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
+    printf "Incomplete database configurations. Please check it.\n"
+    exit 1
+fi
+
+if [ ! "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
+    DB_SAVE_FILE_INSIDE="/docker-entrypoint-initdb.d/${DB_NAME}.sql"
+    DB_COMMAND="mysqldump -u ${DB_USER} -p${DB_PASS} ${DB_NAME} --port=${DB_PORT} -h ${DB_HOST} -B --add-drop-database > ${DB_SAVE_FILE_INSIDE}"
+fi
 
 sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
 sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
+
+if [ "$DB_COMMAND" ]; then
+    sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+    #sudo docker exec "${DOCKER_NAME}_mysql_1" bash -c "${DB_COMMAND}"
+    # then restart this container.
+    printf "Restarting the mysql container to reload the db"
+    sudo docker restart "${DOCKER_NAME}_mysql_1"
+fi

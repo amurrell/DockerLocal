@@ -55,6 +55,7 @@ ADD php7-fpm.site.conf /etc/php/7.0/fpm/pool.d
 
 # daemon off for php also
 RUN sed -i "/;daemonize = .*/c\daemonize = no" /etc/php/7.0/fpm/php-fpm.conf && \
+    sed -i "/variables_order = .*/c\variables_order = \"EGPCS\"" /etc/php/7.0/fpm/php.ini && \
     sed -i "/pid = .*/c\;pid = /run/php/php7.0-fpm.pid" /etc/php/7.0/fpm/php-fpm.conf
 
 # Remove pool.d/www.conf

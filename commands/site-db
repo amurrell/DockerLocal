@@ -1,3 +1,20 @@
 #!/bin/bash
 
-printf "Coming soon...\n"
+
+P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+
+if [ "$N" == "$1$2$3$4$5$6$7$8" ] && [ "$P" == "$1$2$3$4$5$6$7$8" ]; then
+    printf "Need to specify the port or domain (if using ProxyLocal) of the site db you want to refresh. Eg. -p=80 or -n=docker.example.com\n"
+    exit 1
+fi
+
+DEFAULT_PROXY_DATABASES_FILE="../../../ProxyLocal/databases.yml"
+DEFAULT_DOCKER_DATABASES_FILE="../databases.yml"
+
+if [ ! -f "${DEFAULT_PROXY_DATABASES_FILE}" ] && [ ! -f "${DEFAULT_DOCKER_DATABASES_FILE}" ]; then
+    printf "No databases.yml file exists in DockerLocal or ProxyLocal. Create one to use site-db\n"
+    exit 1
+fi
+
+./site-up "$1$2$3$4$5$6$7$8" -r=true
