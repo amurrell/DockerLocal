@@ -10,6 +10,14 @@
 
 - Docker (Tested with Docker version 17.03.1-ce, build c6d412e)
 - Docker-Compose (Tested with docker-compose version 1.12.0, build b31ff33)
+- Bash 4+ (MacOS default 3.2.57, needs brew install)
+
+#### Update Bash for MacOS
+```
+/bin/bash --version
+brew install bash
+/usr/local/bin/bash --version
+```
 
 ## Get Started
 

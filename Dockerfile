@@ -51,7 +51,7 @@ RUN ln -s /etc/nginx/sites-available/nginx.site.conf /etc/nginx/sites-enabled/
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 
 # Copy a configuration file from the current directory
-ADD php7-fpm.site.conf /etc/php/7.0/fpm/pool.d
+ADD php7-fpm.site.custom.conf /etc/php/7.0/fpm/pool.d
 
 # daemon off for php also
 RUN sed -i "/;daemonize = .*/c\daemonize = no" /etc/php/7.0/fpm/php-fpm.conf && \

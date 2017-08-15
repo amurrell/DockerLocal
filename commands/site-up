@@ -1,8 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # start with default port value and name
 WEB_PORT=3000
 DEFAULT_SITES_FILE="../../../ProxyLocal/sites.yml"
+
+DEFAULT_ENV_FILE="../env-example.yml"
+ENV_FILE_CUSTOM="../env-custom.yml"
+
+DEFAULT_PHP_FILE="../php7-fpm.site.conf"
+PHP_FILE_CUSTOM="../php7-fpm.site.custom.conf"
+
 DEFAULT_PROXY_DATABASES_FILE="../../../ProxyLocal/databases.yml"
 DEFAULT_DOCKER_DATABASES_FILE="../databases.yml"
 
@@ -163,6 +170,60 @@ MYSQL_PORT=$((3306 + $WEB_PORT))
 MEMCACHED_PORT=$((11211 + $WEB_PORT))
 DOCKER_NAME=$(echo "dockerlocal${WEB_PORT}")
 
+# Figure out env vars
+if [ ! -f "../env.yml" ]; then
+    ENV_FILE="${DEFAULT_ENV_FILE}"
+fi
+
+if [ -f "../env.yml" ]; then
+    ENV_FILE="../env.yml"
+fi
+
+if [ -f "${ENV_FILE}" ]; then
+    rm -f $ENV_FILE_CUSTOM
+    cp $ENV_FILE $ENV_FILE_CUSTOM
+    sed -i'.bak' "s/DATABASE_NAME/${DB_NAME}/g;" $ENV_FILE_CUSTOM
+    sed -i'.bak' "s/DATABASE_HOST/${DOCKER_NAME}_mysql_1/g;" $ENV_FILE_CUSTOM
+    sed -i'.bak' "s/DATABASE_PORT/${MYSQL_PORT}/g;" $ENV_FILE_CUSTOM
+    rm "${ENV_FILE_CUSTOM}.bak"
+
+    declare -A ENVS
+    parse_yaml() {
+       local prefix=$2
+       local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+       sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+            -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+       awk -F$fs '{
+          indent = length($1)/2;
+          vname[indent] = $2;
+          for (i in vname) {if (i > indent) {delete vname[i]}}
+          if (length($3) > 0) {
+             vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+             printf("%s[%s]=\"%s\"\n", "ENVS", $2, $3);
+          }
+       }'
+    }
+
+    eval $(parse_yaml $ENV_FILE_CUSTOM)
+
+    # make the lines
+    CONF=""
+    for i in "${!ENVS[@]}"
+    do
+      VALUE="${ENVS[$i]}\n"
+      SLASH=\
+      CONF="${CONF}$(printf "env[$i]=${VALUE}")\n"
+    done
+
+    # add envs to custom php file
+
+    rm -f $PHP_FILE_CUSTOM
+    cp $DEFAULT_PHP_FILE $PHP_FILE_CUSTOM
+    sed -i'.bak' "s/;ENV/${CONF}/" $PHP_FILE_CUSTOM
+    rm "${PHP_FILE_CUSTOM}.bak"
+fi
+
+
 # Final checks for behavior
 
 ## SHUT DOWN
@@ -201,8 +262,7 @@ rm "${FILE}.bak"
 
 ## CHECK DB (First time use)
 if [ "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
-    printf "Incomplete database configurations. Please check it.\n"
-    exit 1
+    printf "Incomplete database configurations. Please check it if expecting a database with this site, and specify a domain or port!\n"
 fi
 
 if [ ! "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
