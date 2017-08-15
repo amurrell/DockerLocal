@@ -206,20 +206,24 @@ if [ -f "${ENV_FILE}" ]; then
 
     eval $(parse_yaml $ENV_FILE_CUSTOM)
 
-    # make the lines
-    CONF=""
-    for i in "${!ENVS[@]}"
-    do
-      VALUE="${ENVS[$i]}\n"
-      SLASH=\
-      CONF="${CONF}$(printf "env[$i]=${VALUE}")\n"
-    done
-
     # add envs to custom php file
 
     rm -f $PHP_FILE_CUSTOM
     cp $DEFAULT_PHP_FILE $PHP_FILE_CUSTOM
-    sed -i'.bak' "s/;ENV/${CONF}/" $PHP_FILE_CUSTOM
+
+    for i in "${!ENVS[@]}"
+    do
+      VALUE="${ENVS[$i]}\n"
+      NEWLINE=";ENV"
+      CONF="$(printf "env[$i]=${VALUE}")#"
+      sed -i'.bak' "s/;ENV/${CONF}${NEWLINE}\
+      /g" $PHP_FILE_CUSTOM
+    done
+
+    # Get around osx not liking sed + new lines
+    tr '#' '\n' < "${PHP_FILE_CUSTOM}.bak" > $PHP_FILE_CUSTOM
+
+    #sed -i'.bak' "s/;ENV/${CONF}/" $PHP_FILE_CUSTOM
     rm "${PHP_FILE_CUSTOM}.bak"
 fi
 
