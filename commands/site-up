@@ -120,7 +120,7 @@ if [ -f "${DEFAULT_DOCKER_DATABASES_FILE}" ]; then
   DB_FILE="${DEFAULT_DOCKER_DATABASES_FILE}"
 fi
 
-if [ "DB_FILE" ]; then
+if [ "$DB_FILE" ]; then
     declare -A DBS
     parse_yaml() {
        local prefix=$2
@@ -146,10 +146,10 @@ if [ "DB_FILE" ]; then
     DB_PASS="${DBS['pass']}"
     DB_PORT="${DBS['port']}"
     DB_SAVE_FILE="../data/dumps/${DB_NAME}.sql"
-fi
 
-if [ -z "$DB_HOST" ] || [ -z "$DB_NAME" ] || [ -z "$DB_PASS" ] || [ -z "$DB_USER" ] || [ -z "$DB_PORT" ]; then
-    INCOMPLETE_DB_CONFIG=true
+    if [ -z "$DB_HOST" ] || [ -z "$DB_NAME" ] || [ -z "$DB_PASS" ] || [ -z "$DB_USER" ] || [ -z "$DB_PORT" ]; then
+	INCOMPLETE_DB_CONFIG=true
+    fi
 fi
 
 if [ ! -f "$DB_SAVE_FILE" ] || [ "$REFRESH_DB" ]; then
@@ -215,8 +215,6 @@ sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
 
 if [ "$DB_COMMAND" ]; then
     sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
-    #sudo docker exec "${DOCKER_NAME}_mysql_1" bash -c "${DB_COMMAND}"
-    # then restart this container.
     printf "Restarting the mysql container to reload the db"
     sudo docker restart "${DOCKER_NAME}_mysql_1"
 fi
