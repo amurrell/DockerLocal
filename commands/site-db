@@ -1,11 +1,71 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
+DEFAULT_PROXY_DATABASES_FILE="../../../ProxyLocal/databases.yml"
+DEFAULT_DOCKER_DATABASES_FILE="../databases.yml"
 
 P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
 N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
 
 if [ "$N" == "$1$2$3$4$5$6$7$8" ] && [ "$P" == "$1$2$3$4$5$6$7$8" ]; then
     printf "Need to specify the port or domain (if using ProxyLocal) of the site db you want to refresh. Eg. -p=80 or -n=docker.example.com\n"
+    exit 1
+fi
+
+if [ "$D" ] && [ ! "$P" ]; then
+    printf "You need to specify a port to dump a db at this time.\n"
+    exit 1
+fi
+
+if [ "$D" ]; then
+
+    if [ -f "${DEFAULT_PROXY_DATABASES_FILE}" ]; then
+	DB_FILE="${DEFAULT_PROXY_DATABASES_FILE}"
+    fi
+
+    if [ -f "${DEFAULT_DOCKER_DATABASES_FILE}" ]; then
+      DB_FILE="${DEFAULT_DOCKER_DATABASES_FILE}"
+    fi
+
+    if [ "$DB_FILE" ]; then
+	declare -A DBS
+	parse_yaml() {
+	   local prefix=$2
+	   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+	   sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+		-e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+	   awk -F$fs '{
+	      indent = length($1)/2;
+	      vname[indent] = $2;
+	      for (i in vname) {if (i > indent) {delete vname[i]}}
+	      if (length($3) > 0) {
+		 vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+		 printf("%s[%s]=\"%s\"\n", "DBS", $2, $3);
+	      }
+	   }'
+	}
+
+	eval $(parse_yaml $DB_FILE)
+
+	DB_NAME="${DBS[${P}]}"
+	DB_HOST="${DBS['host']}"
+	DB_USER="${DBS['user']}"
+	DB_PASS="${DBS['pass']}"
+	DB_PORT="${DBS['port']}"
+	DB_SAVE_FILE="../data/dumps/${DB_NAME}.sql"
+
+	if [ -z "$DB_HOST" ] || [ -z "$DB_NAME" ] || [ -z "$DB_PASS" ] || [ -z "$DB_USER" ] || [ -z "$DB_PORT" ]; then
+	    INCOMPLETE_DB_CONFIG=true
+	fi
+    fi
+
+    DOCKER_NAME=$(echo "dockerlocal${P}")
+    DB_SAVE_FILE_INSIDE="/docker-entrypoint-initdb.d/${DB_NAME}.sql.dump"
+    DB_COMMAND="mysqldump -u root -p1234 ${DB_NAME} > ${DB_SAVE_FILE_INSIDE}"
+
+    printf "${DB_COMMAND}\n"
+    sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+
     exit 1
 fi
 

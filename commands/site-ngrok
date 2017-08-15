@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 TEST_EXISTS=$(ngrok -v)
 EXISTS_STRING='ngrok version'

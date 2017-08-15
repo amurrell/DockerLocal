@@ -267,7 +267,7 @@ fi
 
 if [ ! "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
     DB_SAVE_FILE_INSIDE="/docker-entrypoint-initdb.d/${DB_NAME}.sql"
-    DB_COMMAND="mysqldump -u ${DB_USER} -p${DB_PASS} ${DB_NAME} --port=${DB_PORT} -h ${DB_HOST} -B --add-drop-database > ${DB_SAVE_FILE_INSIDE}"
+    DB_COMMAND="mysqldump -u ${DB_USER} -p${DB_PASS} --database ${DB_NAME} --port=${DB_PORT} -h ${DB_HOST} -B --add-drop-database > ${DB_SAVE_FILE_INSIDE}"
 fi
 
 sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
