@@ -274,12 +274,13 @@ if [ ! "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
     DB_COMMAND="mysqldump -u ${DB_USER} -p${DB_PASS} ${DB_NAME} --port=${DB_PORT} -h ${DB_HOST} -B --add-drop-database > ${DB_SAVE_FILE_INSIDE}"
 fi
 
-#sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
-sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
-
 if [ "$DB_COMMAND" ]; then
     sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
     printf "Restarting everything since new db"
-    #sudo docker restart "${DOCKER_NAME}_mysql_1"
-    ./site-up -p=${WEB_PORT}
+    sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
+    sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
+    exit 1
 fi
+
+#sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
+sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
