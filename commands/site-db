@@ -12,12 +12,12 @@ if [ "$N" == "$1$2$3$4$5$6$7$8" ] && [ "$P" == "$1$2$3$4$5$6$7$8" ]; then
     exit 1
 fi
 
-if [ "$D" ] && [ ! "$P" ]; then
+if [ ! "$D" == "$1$2$3$4$5$6$7$8" ] && [ ! "$P" ]; then
     printf "You need to specify a port to dump a db at this time.\n"
     exit 1
 fi
 
-if [ "$D" ]; then
+if [ ! "$D" == "$1$2$3$4$5$6$7$8" ]; then
 
     if [ -f "${DEFAULT_PROXY_DATABASES_FILE}" ]; then
 	DB_FILE="${DEFAULT_PROXY_DATABASES_FILE}"
@@ -63,7 +63,6 @@ if [ "$D" ]; then
     DB_SAVE_FILE_INSIDE="/docker-entrypoint-initdb.d/${DB_NAME}.sql.dump"
     DB_COMMAND="mysqldump -u root -p1234 ${DB_NAME} > ${DB_SAVE_FILE_INSIDE}"
 
-    printf "${DB_COMMAND}\n"
     sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
 
     exit 1
