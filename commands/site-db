@@ -5,19 +5,86 @@ DEFAULT_DOCKER_DATABASES_FILE="../databases.yml"
 
 P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
 N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+C=$(sed -e 's#.*\-c=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
 D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+A=$(sed -e 's#.*\-a=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+I=$(sed -e 's#.*\-i=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+F=$(sed -e 's#.*\-f=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+
 
 if [ "$N" == "$1$2$3$4$5$6$7$8" ] && [ "$P" == "$1$2$3$4$5$6$7$8" ]; then
-    printf "Need to specify the port or domain (if using ProxyLocal) of the site db you want to refresh. Eg. -p=80 or -n=docker.example.com\n"
+    printf "Need to specify the port or domain (if using ProxyLocal) of the site when using this command. Eg. -p=3001 or -n=docker.example.com\n"
     exit 1
 fi
 
-if [ ! "$D" == "$1$2$3$4$5$6$7$8" ] && [ ! "$P" ]; then
+if [ ! "$D" == "$1$2$3$4$5$6$7$8" ] && [ "$P" == "$1$2$3$4$5$6$7$8" ]; then
     printf "You need to specify a port to dump a db at this time.\n"
     exit 1
 fi
 
+if [ ! "$C" == "$1$2$3$4$5$6$7$8" ] && [ "$P" == "$1$2$3$4$5$6$7$8" ]; then
+    printf "You need to specify a port to create a db at this time.\n"
+    exit 1
+fi
+
+if [ ! "$I" == "$1$2$3$4$5$6$7$8" ] && [ "$P" == "$1$2$3$4$5$6$7$8" ]; then
+    printf "You need to specify a port to import a file into a db at this time.\n"
+    exit 1
+fi
+
+if [ ! "$F" == "$1$2$3$4$5$6$7$8" ] && [ "$P" == "$1$2$3$4$5$6$7$8" ]; then
+    printf "You need to specify a port to import a db file at this time.\n"
+    exit 1
+fi
+
+if [ ! "$I" == "$1$2$3$4$5$6$7$8" ] && [ "$F" == "$1$2$3$4$5$6$7$8" ]; then
+    printf "You need to specify a file to import. Ex. ./site-up -i=db_name -f=file_path\n"
+    exit 1
+fi
+
+if [ ! "$C" == "$1$2$3$4$5$6$7$8" ]; then
+    DOCKER_NAME=$(echo "dockerlocal${P}")
+    DB_CREATE_DB="CREATE DATABASE ${C};"
+    DB_COMMAND="echo \"${DB_CREATE_DB}\" | mysql -u root -p1234"
+
+    sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+
+    exit 1
+fi
+
+if [ ! "$I" == "$1$2$3$4$5$6$7$8" ] && [ ! "F" == "$1$2$3$4$5$6$7$8" ]; then
+    DOCKER_NAME=$(echo "dockerlocal${P}")
+    DB_COMMAND="mysql -u root -p1234 ${I} < /docker-entrypoint-initdb.d/${F}"
+
+    sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+
+    exit 1
+fi
+
+if [ ! "$F" == "$1$2$3$4$5$6$7$8" ] && [ "$I" == "$1$2$3$4$5$6$7$8" ]  ; then
+    DOCKER_NAME=$(echo "dockerlocal${P}")
+    DB_COMMAND="mysql -u root -p1234 < /docker-entrypoint-initdb.d/${F}"
+
+    sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+
+    exit 1
+fi
+
 if [ ! "$D" == "$1$2$3$4$5$6$7$8" ]; then
+
+    if [ ! "$D" == "true" ]; then
+	DOCKER_NAME=$(echo "dockerlocal${P}")
+	DB_SAVE_FILE_INSIDE="/docker-entrypoint-initdb.d/${D}.sql.dump"
+	DB_COMMAND="mysqldump -u root -p1234 ${D} > ${DB_SAVE_FILE_INSIDE}"
+
+	if [ ! "$A" == "$1$2$3$4$5$6$7$8" ]; then
+	    DB_COMMAND="mysqldump -u root -p1234 ${D} --add-drop-database -B > ${DB_SAVE_FILE_INSIDE}"
+	fi
+
+	sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+	exit 1
+    fi
+
 
     if [ -f "${DEFAULT_PROXY_DATABASES_FILE}" ]; then
 	DB_FILE="${DEFAULT_PROXY_DATABASES_FILE}"

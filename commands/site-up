@@ -13,55 +13,64 @@ PHP_FILE_CUSTOM="../php7-fpm.site.custom.conf"
 DEFAULT_PROXY_DATABASES_FILE="../../../ProxyLocal/databases.yml"
 DEFAULT_DOCKER_DATABASES_FILE="../databases.yml"
 
+DEFAULT_DOCKERFILE_FILE="Dockerfile"
+CUSTOM_DOCKERFILE_FILE="Dockerfile-custom"
+
 # process arguments
 while getopts ":pnsdkmhr" opt; do
-    P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
-    N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
-    S=$(sed -e 's#.*\-s=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
-    D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
-    K=$(sed -e 's#.*\-k=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
-    M=$(sed -e 's#.*\-m=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
-    H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
-    R=$(sed -e 's#.*\-r=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8")
+    P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
+    N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
+    S=$(sed -e 's#.*\-s=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
+    D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
+    K=$(sed -e 's#.*\-k=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
+    M=$(sed -e 's#.*\-m=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
+    H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
+    R=$(sed -e 's#.*\-r=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
+    C=$(sed -e 's#.*\-c=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
 
     # p
-    if [ "$opt" ] && [ ! "$P" == "$1$2$3$4$5$6$7$8" ]; then
+    if [ "$opt" ] && [ ! "$P" == "$1$2$3$4$5$6$7$8$9" ]; then
         WEB_PORT=$P
     fi
 
     # n
-    if [ "$opt" ] && [ ! "$N" == "$1$2$3$4$5$6$7$8" ]; then
+    if [ "$opt" ] && [ ! "$N" == "$1$2$3$4$5$6$7$8$9" ]; then
         NAME=$N
     fi
 
     # s
-    if [ "$opt" ] && [ ! "$S" == "$1$2$3$4$5$6$7$8" ]; then
+    if [ "$opt" ] && [ ! "$S" == "$1$2$3$4$5$6$7$8$9" ]; then
         SITES_FILE=$S
     fi
 
     # d
-    if [ "$opt" ] && [ ! "$D" == "$1$2$3$4$5$6$7$8" ]; then
+    if [ "$opt" ] && [ ! "$D" == "$1$2$3$4$5$6$7$8$9" ]; then
         SITE_DOWN=$D
     fi
 
     # k
-    if [ "$opt" ] && [ ! "$K" == "$1$2$3$4$5$6$7$8" ]; then
+    if [ "$opt" ] && [ ! "$K" == "$1$2$3$4$5$6$7$8$9" ]; then
         NGROK=$K
     fi
 
     # m
-    if [ "$opt" ] && [ ! "$M" == "$1$2$3$4$5$6$7$8" ]; then
+    if [ "$opt" ] && [ ! "$M" == "$1$2$3$4$5$6$7$8$9" ]; then
         SITE_DB=$M
     fi
 
     # h
-    if [ "$opt" ] && [ ! "$H" == "$1$2$3$4$5$6$7$8" ]; then
+    if [ "$opt" ] && [ ! "$H" == "$1$2$3$4$5$6$7$8$9" ]; then
         SITE_SSH=$H
     fi
 
     # r
-    if [ "$opt" ] && [ ! "$R" == "$1$2$3$4$5$6$7$8" ]; then
+    if [ "$opt" ] && [ ! "$R" == "$1$2$3$4$5$6$7$8$9" ]; then
         REFRESH_DB=$R
+    fi
+
+    # c
+    if [ "$opt" ] && [ ! "$C" == "$1$2$3$4$5$6$7$8$9" ]; then
+        CREATE_DB=$C
     fi
 done
 
@@ -152,7 +161,7 @@ if [ "$DB_FILE" ]; then
     DB_USER="${DBS['user']}"
     DB_PASS="${DBS['pass']}"
     DB_PORT="${DBS['port']}"
-    DB_SAVE_FILE="../data/dumps/${DB_NAME}.sql"
+    DB_SAVE_FILE="../data/dumps/${DB_NAME}.sql.remote.dump"
 
     if [ -z "$DB_HOST" ] || [ -z "$DB_NAME" ] || [ -z "$DB_PASS" ] || [ -z "$DB_USER" ] || [ -z "$DB_PORT" ]; then
 	INCOMPLETE_DB_CONFIG=true
@@ -161,6 +170,14 @@ fi
 
 if [ ! -f "$DB_SAVE_FILE" ] || [ "$REFRESH_DB" ]; then
     DO_DB_REFRESH=true
+fi
+
+if [ ! -f "../$CUSTOM_DOCKERFILE_FILE" ]; then
+    DOCKERFILE_FILE="${DEFAULT_DOCKERFILE_FILE}"
+fi
+
+if [ -f "../$CUSTOM_DOCKERFILE_FILE" ]; then
+    DOCKERFILE_FILE="${CUSTOM_DOCKERFILE_FILE}"
 fi
 
 # Use variables to create docker-compose custom
@@ -183,7 +200,7 @@ if [ -f "${ENV_FILE}" ]; then
     rm -f $ENV_FILE_CUSTOM
     cp $ENV_FILE $ENV_FILE_CUSTOM
     sed -i'.bak' "s/DATABASE_NAME/${DB_NAME}/g;" $ENV_FILE_CUSTOM
-    sed -i'.bak' "s/DATABASE_HOST/${DOCKER_NAME}_mysql_1/g;" $ENV_FILE_CUSTOM
+    sed -i'.bak' "s/DATABASE_HOST/mysql/g;" $ENV_FILE_CUSTOM
     sed -i'.bak' "s/DATABASE_PORT/${MYSQL_PORT}/g;" $ENV_FILE_CUSTOM
     rm "${ENV_FILE_CUSTOM}.bak"
 
@@ -223,7 +240,6 @@ if [ -f "${ENV_FILE}" ]; then
     # Get around osx not liking sed + new lines
     tr '#' '\n' < "${PHP_FILE_CUSTOM}.bak" > $PHP_FILE_CUSTOM
 
-    #sed -i'.bak' "s/;ENV/${CONF}/" $PHP_FILE_CUSTOM
     rm "${PHP_FILE_CUSTOM}.bak"
 fi
 
@@ -258,6 +274,7 @@ cp ../docker-compose.yml $FILE
 sed -i'.bak' "s/WEB_PORT/${WEB_PORT}/g;" $FILE
 sed -i'.bak' "s/MYSQL_PORT/${MYSQL_PORT}/g;" $FILE
 sed -i'.bak' "s/MEMCACHED_PORT/${MEMCACHED_PORT}/g;" $FILE
+sed -i'.bak' "s/DOCKERFILE/${DOCKERFILE_FILE}/g;" $FILE
 
 sed -i'.bak' "s/DATABASE_NAME/${DB_NAME}/g;" $FILE
 sed -i'.bak' "s/DATABASE_HOST/${DOCKER_NAME}_mysql_1/g;" $FILE
@@ -270,17 +287,24 @@ if [ "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
 fi
 
 if [ ! "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
-    DB_SAVE_FILE_INSIDE="/docker-entrypoint-initdb.d/${DB_NAME}.sql"
+    DB_SAVE_FILE_BASENAME="${DB_NAME}.sql.remote.dump"
+    DB_SAVE_FILE_INSIDE="/docker-entrypoint-initdb.d/${DB_SAVE_FILE_BASENAME}"
     DB_COMMAND="mysqldump -u ${DB_USER} -p${DB_PASS} ${DB_NAME} --port=${DB_PORT} -h ${DB_HOST} -B --add-drop-database > ${DB_SAVE_FILE_INSIDE}"
+fi
+
+# Create DB
+if [ "$C" ]; then
+    ./site-db -p=${WEB_PORT} -c=${C}
 fi
 
 if [ "$DB_COMMAND" ]; then
     sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
-    printf "Restarting everything since new db"
-    sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
-    sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
+    ./site-db -p=${WEB_PORT} -f=${DB_SAVE_FILE_BASENAME}
     exit 1
 fi
 
-#sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
+# Not sure when we would want to take it down but leaving here incase we do at some point.
+# sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
+
+# Up
 sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
