@@ -281,6 +281,12 @@ sed -i'.bak' "s/DATABASE_HOST/${DOCKER_NAME}_mysql_1/g;" $FILE
 sed -i'.bak' "s/DATABASE_PORT/${MYSQL_PORT}/g;" $FILE
 rm "${FILE}.bak"
 
+# NEED TO UP BEFORE DB
+# Not sure when we would want to take it down but leaving here incase we do at some point.
+# sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
+# Up
+sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
+
 ## CHECK DB (First time use)
 if [ "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
     printf "Incomplete database configurations. Please check it if expecting a database with this site, and specify a domain or port!\n"
@@ -293,7 +299,7 @@ if [ ! "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
 fi
 
 # Create DB
-if [ "$C" ]; then
+if [ "$CREATE_DB" ]; then
     ./site-db -p=${WEB_PORT} -c=${C}
 fi
 
@@ -302,9 +308,3 @@ if [ "$DB_COMMAND" ]; then
     ./site-db -p=${WEB_PORT} -f=${DB_SAVE_FILE_BASENAME}
     exit 1
 fi
-
-# Not sure when we would want to take it down but leaving here incase we do at some point.
-# sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
-
-# Up
-sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
