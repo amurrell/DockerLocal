@@ -2,6 +2,7 @@
 
 # start with default port value and name
 WEB_PORT=3000
+PORT_FILE="../port"
 DEFAULT_SITES_FILE="../../../ProxyLocal/sites.yml"
 
 DEFAULT_ENV_FILE="../env-example.yml"
@@ -16,63 +17,71 @@ DEFAULT_DOCKER_DATABASES_FILE="../databases.yml"
 DEFAULT_DOCKERFILE_FILE="Dockerfile"
 CUSTOM_DOCKERFILE_FILE="Dockerfile-custom"
 
-# process arguments
-while getopts ":pnsdkmhr" opt; do
-    P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
-    N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
-    S=$(sed -e 's#.*\-s=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
-    D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
-    K=$(sed -e 's#.*\-k=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
-    M=$(sed -e 's#.*\-m=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
-    H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
-    R=$(sed -e 's#.*\-r=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
-    C=$(sed -e 's#.*\-c=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
+# Process Arguments:
+P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+S=$(sed -e 's#.*\-s=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+K=$(sed -e 's#.*\-k=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+M=$(sed -e 's#.*\-m=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+R=$(sed -e 's#.*\-r=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+C=$(sed -e 's#.*\-c=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+L=$(sed -e 's#.*\-l=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
 
-    # p
-    if [ "$opt" ] && [ ! "$P" == "$1$2$3$4$5$6$7$8$9" ]; then
-        WEB_PORT=$P
-    fi
+if [ "$P" == "$1$2$3$4$5$6$7$8$9${10}" ] && [ -f  "${PORT_FILE}" ]; then
+    P=$(eval cat ${PORT_FILE});
+fi
 
-    # n
-    if [ "$opt" ] && [ ! "$N" == "$1$2$3$4$5$6$7$8$9" ]; then
-        NAME=$N
-    fi
+# p
+if [ ! "$P" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    WEB_PORT=$P
+fi
 
-    # s
-    if [ "$opt" ] && [ ! "$S" == "$1$2$3$4$5$6$7$8$9" ]; then
-        SITES_FILE=$S
-    fi
+# n
+if [ ! "$N" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    NAME=$N
+fi
 
-    # d
-    if [ "$opt" ] && [ ! "$D" == "$1$2$3$4$5$6$7$8$9" ]; then
-        SITE_DOWN=$D
-    fi
+# s
+if [ ! "$S" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    SITES_FILE=$S
+fi
 
-    # k
-    if [ "$opt" ] && [ ! "$K" == "$1$2$3$4$5$6$7$8$9" ]; then
-        NGROK=$K
-    fi
+# d
+if [ ! "$D" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    SITE_DOWN=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+fi
 
-    # m
-    if [ "$opt" ] && [ ! "$M" == "$1$2$3$4$5$6$7$8$9" ]; then
-        SITE_DB=$M
-    fi
+# k
+if [ ! "$K" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    NGROK=$K
+fi
 
-    # h
-    if [ "$opt" ] && [ ! "$H" == "$1$2$3$4$5$6$7$8$9" ]; then
-        SITE_SSH=$H
-    fi
+# m
+if [ ! "$M" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    SITE_DB=$M
+fi
 
-    # r
-    if [ "$opt" ] && [ ! "$R" == "$1$2$3$4$5$6$7$8$9" ]; then
-        REFRESH_DB=$R
-    fi
+# h
+if [ ! "$H" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    SITE_SSH=$H
+fi
 
-    # c
-    if [ "$opt" ] && [ ! "$C" == "$1$2$3$4$5$6$7$8$9" ]; then
-        CREATE_DB=$C
-    fi
-done
+# r
+if [ ! "$R" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    REFRESH_DB=$R
+fi
+
+# c
+if [ ! "$C" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    CREATE_DB=$C
+fi
+
+# l
+if [ ! "$L" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    LOCAL_DB=$L
+fi
 
 # Allow short value "~" to indicate default sites file
 if [ "$SITES_FILE" == "~" ]; then
@@ -187,6 +196,14 @@ MYSQL_PORT=$((3306 + $WEB_PORT))
 MEMCACHED_PORT=$((11211 + $WEB_PORT))
 DOCKER_NAME=$(echo "dockerlocal${WEB_PORT}")
 
+if [ "$CREATE_DB" ]; then
+    DB_NAME="$CREATE_DB"
+fi
+
+if [ "$LOCAL_DB" ]; then
+    DB_NAME="$LOCAL_DB"
+fi
+
 # Figure out env vars
 if [ ! -f "../env.yml" ]; then
     ENV_FILE="${DEFAULT_ENV_FILE}"
@@ -216,7 +233,7 @@ if [ -f "${ENV_FILE}" ]; then
           for (i in vname) {if (i > indent) {delete vname[i]}}
           if (length($3) > 0) {
              vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
-             printf("%s[%s]=\"%s\"\n", "ENVS", $2, $3);
+             printf("%s[%s]=\"{%s}\"\n", "ENVS", $2, $3);
           }
        }'
     }
@@ -237,9 +254,14 @@ if [ -f "${ENV_FILE}" ]; then
       /g" $PHP_FILE_CUSTOM
     done
 
+    # Replace {} hack with " to ensure vars are quoted
+    tr '{' '"' < "${PHP_FILE_CUSTOM}.bak" > "${PHP_FILE_CUSTOM}.bak2"
+    tr '}' '"' < "${PHP_FILE_CUSTOM}.bak2" > "${PHP_FILE_CUSTOM}.bak"
+
     # Get around osx not liking sed + new lines
     tr '#' '\n' < "${PHP_FILE_CUSTOM}.bak" > $PHP_FILE_CUSTOM
 
+    rm "${PHP_FILE_CUSTOM}.bak2"
     rm "${PHP_FILE_CUSTOM}.bak"
 fi
 
@@ -289,7 +311,11 @@ sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
 
 ## CHECK DB (First time use)
 if [ "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
-    printf "Incomplete database configurations. Please check it if expecting a database with this site, and specify a domain or port!\n"
+    if [ "$LOCAL_DB" ] || [ "$CREATE_DB" ]; then
+	printf "Using a local database, NOT fetching from a remote and then populating a local database. Just using a local one.\n"
+    else
+        printf "Incomplete remote database configurations. Please check it if expecting a remote database to be pulled down to a local one with this site, and specify a domain or port!\n"
+    fi
 fi
 
 if [ ! "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then

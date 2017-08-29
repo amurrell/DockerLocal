@@ -7,4 +7,4 @@ if [[ ! "${TEST_EXISTS}" == *"${EXISTS_STRING}"* ]]; then
    exit 1
 fi
 
-./site-up "$1$2$3$4" -k=true
+./site-up "$1$2$3$4$5$6$7$8$9" -k=true
