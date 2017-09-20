@@ -318,7 +318,7 @@ if [ "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
     fi
 fi
 
-if [ ! "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
+if [ "$DB_FILE" ] && [ ! "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
     DB_SAVE_FILE_BASENAME="${DB_NAME}.sql.remote.dump"
     DB_SAVE_FILE_INSIDE="/docker-entrypoint-initdb.d/${DB_SAVE_FILE_BASENAME}"
     DB_COMMAND="mysqldump -u ${DB_USER} -p${DB_PASS} ${DB_NAME} --port=${DB_PORT} -h ${DB_HOST} -B --add-drop-database > ${DB_SAVE_FILE_INSIDE}"
