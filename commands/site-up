@@ -312,6 +312,7 @@ sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
 ## CHECK DB (First time use)
 if [ "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
     if [ "$LOCAL_DB" ] || [ "$CREATE_DB" ]; then
+        sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "service mysql start"
 	printf "Using a local database, NOT fetching from a remote and then populating a local database. Just using a local one.\n"
     else
         printf "Incomplete remote database configurations. Please check it if expecting a remote database to be pulled down to a local one with this site, and specify a domain or port!\n"

@@ -22,7 +22,6 @@ RUN	apt-get update && \
 	apt-get -y install libcurl3-openssl-dev && \
 	apt-get -y install libyaml-dev && \
 	apt-get -y install php7.0-zip && \
-#        apt-get -y install memcached && \
         apt-get -y install php-memcached
 
 RUN pear config-set php_ini /etc/php/7.0/fpm/php.ini
