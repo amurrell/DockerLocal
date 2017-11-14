@@ -4,8 +4,6 @@ services:
         build:
             context: ./
             dockerfile: DOCKERFILE
-        ports:
-            - "WEB_PORT:80"
         volumes:
             - ../:/var/www/site
         links:
@@ -15,6 +13,7 @@ services:
             - "80"
         networks:
             - dlocal-net
+            - proxylocal_docker-proxy-net
         depends_on:
             - mysql
             - memcached
@@ -44,3 +43,5 @@ volumes:
 networks:
   dlocal-net:
     driver: bridge
+  proxylocal_docker-proxy-net:
+      external: true
