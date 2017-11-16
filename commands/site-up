@@ -237,7 +237,7 @@ if [ "$LOCAL_DB" ]; then
     DB_NAME="$LOCAL_DB"
 fi
 
-if [ "$INCOMPLETE_DB_CONFIG" ] && [ -f ../database ] && [ ! "$LOCAL_DB" ]; then
+if [ ! "DB_NAME" == '' ] && [ -f ../database ]; then
     LOCAL_DB=$(eval cat ../database)
     DB_NAME=$(eval cat ../database)
 fi
