@@ -106,36 +106,78 @@ if [ "$NAME" ] && [ ! "$SITES_FILE" ] && [ -f "${DEFAULT_SITES_FILE}" ]; then
     SITES_FILE="${DEFAULT_SITES_FILE}"
 fi
 
-# Find the port using the sites.yml and project name
+# Determine ProxyLocal location based on SITES_FILE
+PROXYLOCAL_LOC="${SITES_FILE/sites.yml/}"
+PROXYLOCAL_SITES="${SITES_FILE}"
 
-if [ "$SITES_FILE" ]; then
-
-    declare -A SITES
-    parse_yaml() {
-       local prefix=$2
-       local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
-       sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
-            -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
-       awk -F$fs '{
-          indent = length($1)/2;
-          vname[indent] = $2;
-          for (i in vname) {if (i > indent) {delete vname[i]}}
-          if (length($3) > 0) {
-             vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
-             printf("%s[%s]=\"%s\"\n", "SITES", $2, $3);
-          }
-       }'
-    }
-
-    eval $(parse_yaml $SITES_FILE)
-
-    for i in "${!SITES[@]}"
-    do
-        if [ "${SITES[$i]}" == "${NAME}" ]; then
-            WEB_PORT="${i}"
-        fi
-    done
+# Account for the fact we may not have specified sites.yml but it does exist.
+if [ ! "$SITES_FILE" ] && [ -f "${DEFAULT_SITES_FILE}" ]; then
+    PROXYLOCAL_SITES="${DEFAULT_SITES_FILE}"
+    PROXYLOCAL_LOC="${DEFAULT_SITES_FILE/sites.yml/}"
 fi
+
+if [ "$PROXYLOCAL_LOC" != "" ]; then
+    PROXYLOCAL_COM="${PROXYLOCAL_LOC}commands/"
+fi
+
+# Determine WEB_PORT from sites.yml (if it exists) and if no port file or port switch specified
+if [ "$NAME" ] && [ "$PROXYLOCAL_SITES" ] && [ ! -f  "${PORT_FILE}" ] && [ "$P" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+    PORTPART=$(eval cat $PROXYLOCAL_SITES | awk "/: ${NAME}/"' { print $1 }')
+    WEB_PORT="${PORTPART/:/}"
+fi
+
+if [ "$WEB_PORT" = '' ]; then
+    printf "The name of the site specified doesn't match what's in the sites.yml file. Also, I suggest creating a port file in DockerLocal to avoid typing the name every time.\n"
+    exit
+fi
+
+# Determine site domain from sites.yml
+SITE_DOMAIN=$(eval cat $PROXYLOCAL_SITES | awk "/${WEB_PORT}:/"' { print $2 }')
+# Check if proxylocal is running...
+PROXYLOCAL_NETWORK=$(eval sudo docker network ls | grep "proxylocal_docker-proxy-net")
+
+# Network is down; try to bring up if ProxyLocal is installed
+if [ "${PROXYLOCAL_NETWORK}" = '' ] && [ -f "${PROXYLOCAL_SITES}" ]; then
+    RETURNPWD=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+    printf "ProxyLocal not running... going to start it up. Make sure nginx/apache are not running on port 80!\n"
+    eval "cd ${PROXYLOCAL_COM} && ./proxy-up"
+    cd $RETURNPWD
+fi
+
+# Try again
+PROXYLOCAL_NETWORK=$(eval sudo docker network ls | grep "proxylocal_docker-proxy-net")
+
+# Handle the nginx up part after the machine is up, because otherwise the upstream host will not exist yet.
+
+# Can Handle the nginx down because it will be up already..
+# Network is up; handle nginx if site is down
+if [ ! "${PROXYLOCAL_NETWORK}" = '' ] && [ "$SITE_DOWN" ]; then
+    printf "Disabling site with and reloading nginx in Proxylocal.\n"
+    RETURNPWD=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+    eval "cd ${PROXYLOCAL_COM} && ./proxy-nginx -p=$WEB_PORT -d=true && cd ${RETURNPWD}"
+    cd $RETURNPWD
+fi
+
+# DOCKER COMPOSE (use proxylocal if its on)
+FILE="../docker-compose-custom.yml"
+rm $FILE
+
+if [ ! "$PROXYLOCAL_NETWORK" == '' ]; then
+    cp ../docker-compose-proxylocal.yml $FILE
+else
+    cp ../docker-compose.yml $FILE
+fi
+
+# DOCKERFILE 
+if [ ! -f "../$CUSTOM_DOCKERFILE_FILE" ]; then
+    DOCKERFILE_FILE="${DEFAULT_DOCKERFILE_FILE}"
+fi
+
+if [ -f "../$CUSTOM_DOCKERFILE_FILE" ]; then
+    DOCKERFILE_FILE="${CUSTOM_DOCKERFILE_FILE}"
+fi
+
+# DETERMINE DATABASES FILE INFO - needs to be done before we populate the docker-compose with ports and such.
 
 if [ -f "${DEFAULT_PROXY_DATABASES_FILE}" ]; then
   DB_FILE="${DEFAULT_PROXY_DATABASES_FILE}"
@@ -181,27 +223,23 @@ if [ ! -f "$DB_SAVE_FILE" ] || [ "$REFRESH_DB" ]; then
     DO_DB_REFRESH=true
 fi
 
-if [ ! -f "../$CUSTOM_DOCKERFILE_FILE" ]; then
-    DOCKERFILE_FILE="${DEFAULT_DOCKERFILE_FILE}"
-fi
-
-if [ -f "../$CUSTOM_DOCKERFILE_FILE" ]; then
-    DOCKERFILE_FILE="${CUSTOM_DOCKERFILE_FILE}"
-fi
-
-# Use variables to create docker-compose custom
-
-FILE="../docker-compose-custom.yml"
+# CREATE DOCKER-COMPOSE - use variables
 MYSQL_PORT=$((3306 + $WEB_PORT))
 MEMCACHED_PORT=$((11211 + $WEB_PORT))
 DOCKER_NAME=$(echo "dockerlocal${WEB_PORT}")
 
 if [ "$CREATE_DB" ]; then
     DB_NAME="$CREATE_DB"
+    echo "${DB_NAME}" > ../database
 fi
 
 if [ "$LOCAL_DB" ]; then
     DB_NAME="$LOCAL_DB"
+fi
+
+if [ "$INCOMPLETE_DB_CONFIG" ] && [ -f ../database ] && [ ! "$LOCAL_DB" ]; then
+    LOCAL_DB=$(eval cat ../database)
+    DB_NAME=$(eval cat ../database)
 fi
 
 # Figure out env vars
@@ -268,6 +306,29 @@ fi
 
 # Final checks for behavior
 
+## NGROK
+if [ "$NGROK" ]; then
+    ngrok http 127.0.0.1:"${WEB_PORT}"
+    exit 1
+fi
+
+## UP/BUILD
+if [ "$WEB_PORT" == "3000" ]; then
+    printf "No port specified, using default 3000. Next instance of DockerLocal will need a port specified: ./site-up -p=3001\n"
+fi
+
+sed -i'.bak' "s/WEB_PORT/${WEB_PORT}/g;" $FILE
+sed -i'.bak' "s/MYSQL_PORT/${MYSQL_PORT}/g;" $FILE
+sed -i'.bak' "s/MEMCACHED_PORT/${MEMCACHED_PORT}/g;" $FILE
+sed -i'.bak' "s/DOCKERFILE/${DOCKERFILE_FILE}/g;" $FILE
+
+sed -i'.bak' "s/DATABASE_NAME/${DB_NAME}/g;" $FILE
+sed -i'.bak' "s/DATABASE_HOST/${DOCKER_NAME}_mysql_1/g;" $FILE
+sed -i'.bak' "s/DATABASE_PORT/${MYSQL_PORT}/g;" $FILE
+
+rm "${FILE}.bak"
+
+
 ## SHUT DOWN
 if [ "$SITE_DOWN" ]; then
     sudo docker-compose -p "${DOCKER_NAME}" -f "${FILE}" down
@@ -280,39 +341,32 @@ if [ "$SITE_SSH" ]; then
     exit 1
 fi
 
-## NGROK
-if [ "$NGROK" ]; then
-    ngrok http 127.0.0.1:"${WEB_PORT}"
-    exit 1
-fi
-
-## UP/BUILD
-if [ "$WEB_PORT" == "3000" ]; then
-    printf "No port specified, using default 3000. Next instance of DockerLocal will need a port specified: ./site-up -p=3001\n"
-fi
-
-rm $FILE
-cp ../docker-compose.yml $FILE
-sed -i'.bak' "s/WEB_PORT/${WEB_PORT}/g;" $FILE
-sed -i'.bak' "s/MYSQL_PORT/${MYSQL_PORT}/g;" $FILE
-sed -i'.bak' "s/MEMCACHED_PORT/${MEMCACHED_PORT}/g;" $FILE
-sed -i'.bak' "s/DOCKERFILE/${DOCKERFILE_FILE}/g;" $FILE
-
-sed -i'.bak' "s/DATABASE_NAME/${DB_NAME}/g;" $FILE
-sed -i'.bak' "s/DATABASE_HOST/${DOCKER_NAME}_mysql_1/g;" $FILE
-sed -i'.bak' "s/DATABASE_PORT/${MYSQL_PORT}/g;" $FILE
-rm "${FILE}.bak"
-
 # NEED TO UP BEFORE DB
 # Not sure when we would want to take it down but leaving here incase we do at some point.
 # sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
 # Up
 sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
 
+# Network is up; handle nginx if site is up
+if [ ! "${PROXYLOCAL_NETWORK}" = '' ] && [ ! "$SITE_DOWN" ]; then
+    printf "Enabling site with and reloading nginx in Proxylocal.\n"
+    RETURNPWD=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+    eval "cd ${PROXYLOCAL_COM} && ./proxy-nginx -p=$WEB_PORT"
+    cd $RETURNPWD
+fi
+
+## Provide URL to view site?
+if [ ! "$PROXYLOCAL_NETWORK" == '' ]; then
+    printf "Visit your site at: http://${SITE_DOMAIN}\n"
+else
+    printf "Either you are not using proxylocal (network not started) or you do not have an entry for this port in sites.yml (and therefore your /etc/hosts file)\n"
+    printf "Visit your site at: http://localhost:${WEB_PORT}\n"
+fi
+
 ## CHECK DB (First time use)
 if [ "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
     if [ "$LOCAL_DB" ] || [ "$CREATE_DB" ]; then
-        sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "service mysql start"
+#        sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "service mysql start"
 	printf "Using a local database, NOT fetching from a remote and then populating a local database. Just using a local one.\n"
     else
         printf "Incomplete remote database configurations. Please check it if expecting a remote database to be pulled down to a local one with this site, and specify a domain or port!\n"

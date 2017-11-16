@@ -6,3 +6,4 @@ env-custom.yml
 *.bak
 Dockerfile-*
 port
+database
