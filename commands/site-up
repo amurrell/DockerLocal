@@ -116,7 +116,7 @@ if [ ! "$SITES_FILE" ] && [ -f "${DEFAULT_SITES_FILE}" ]; then
     PROXYLOCAL_LOC="${DEFAULT_SITES_FILE/sites.yml/}"
 fi
 
-if [ "$PROXYLOCAL_LOC" != "" ]; then
+if [ ! "$PROXYLOCAL_LOC" == "" ]; then
     PROXYLOCAL_COM="${PROXYLOCAL_LOC}commands/"
 fi
 
@@ -126,7 +126,7 @@ if [ "$NAME" ] && [ "$PROXYLOCAL_SITES" ] && [ ! -f  "${PORT_FILE}" ] && [ "$P" 
     WEB_PORT="${PORTPART/:/}"
 fi
 
-if [ "$WEB_PORT" = '' ]; then
+if [ "$WEB_PORT" == '' ]; then
     printf "The name of the site specified doesn't match what's in the sites.yml file. Also, I suggest creating a port file in DockerLocal to avoid typing the name every time.\n"
     exit
 fi
@@ -136,8 +136,8 @@ SITE_DOMAIN=$(eval cat $PROXYLOCAL_SITES | awk "/${WEB_PORT}:/"' { print $2 }')
 # Check if proxylocal is running...
 PROXYLOCAL_NETWORK=$(eval sudo docker network ls | grep "proxylocal_docker-proxy-net")
 
-# Network is down; try to bring up if ProxyLocal is installed
-if [ "${PROXYLOCAL_NETWORK}" = '' ] && [ -f "${PROXYLOCAL_SITES}" ]; then
+# Network is down; try to bring up if ProxyLocal is installed AND if this site was in sites.yml
+if [ "${PROXYLOCAL_NETWORK}" == '' ] && [ -f "${PROXYLOCAL_SITES}" ] && [ ! "$SITE_DOMAIN" == '' ]; then
     RETURNPWD=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
     printf "ProxyLocal not running... going to start it up. Make sure nginx/apache are not running on port 80!\n"
     eval "cd ${PROXYLOCAL_COM} && ./proxy-up"
@@ -151,7 +151,7 @@ PROXYLOCAL_NETWORK=$(eval sudo docker network ls | grep "proxylocal_docker-proxy
 
 # Can Handle the nginx down because it will be up already..
 # Network is up; handle nginx if site is down
-if [ ! "${PROXYLOCAL_NETWORK}" = '' ] && [ "$SITE_DOWN" ]; then
+if [ ! "${PROXYLOCAL_NETWORK}" == '' ] && [ "$SITE_DOWN" ] && [ ! "$SITE_DOMAIN" == '' ]; then
     printf "Disabling site with and reloading nginx in Proxylocal.\n"
     RETURNPWD=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
     eval "cd ${PROXYLOCAL_COM} && ./proxy-nginx -p=$WEB_PORT -d=true && cd ${RETURNPWD}"
@@ -162,7 +162,7 @@ fi
 FILE="../docker-compose-custom.yml"
 rm $FILE
 
-if [ ! "$PROXYLOCAL_NETWORK" == '' ]; then
+if [ ! "$PROXYLOCAL_NETWORK" == '' ] && [ ! "$SITE_DOMAIN" == '' ]; then
     cp ../docker-compose-proxylocal.yml $FILE
 else
     cp ../docker-compose.yml $FILE
@@ -308,7 +308,7 @@ fi
 
 ## NGROK
 if [ "$NGROK" ]; then
-    ngrok http 127.0.0.1:"${WEB_PORT}"
+    ngrok http 0.0.0.0:80
     exit 1
 fi
 
@@ -348,7 +348,7 @@ fi
 sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
 
 # Network is up; handle nginx if site is up
-if [ ! "${PROXYLOCAL_NETWORK}" = '' ] && [ ! "$SITE_DOWN" ]; then
+if [ ! "${PROXYLOCAL_NETWORK}" == '' ] && [ ! "$SITE_DOWN" ] && [ ! "$SITE_DOMAIN" == '' ]; then
     printf "Enabling site with and reloading nginx in Proxylocal.\n"
     RETURNPWD=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
     eval "cd ${PROXYLOCAL_COM} && ./proxy-nginx -p=$WEB_PORT"
@@ -356,18 +356,17 @@ if [ ! "${PROXYLOCAL_NETWORK}" = '' ] && [ ! "$SITE_DOWN" ]; then
 fi
 
 ## Provide URL to view site?
-if [ ! "$PROXYLOCAL_NETWORK" == '' ]; then
+if [ ! "$PROXYLOCAL_NETWORK" == '' ] && [ ! "$SITE_DOMAIN" == '' ]; then
     printf "Visit your site at: http://${SITE_DOMAIN}\n"
 else
-    printf "Either you are not using proxylocal (network not started) or you do not have an entry for this port in sites.yml (and therefore your /etc/hosts file)\n"
+    printf "Either you are not using proxylocal or you do not have an entry for this port in sites.yml\n"
     printf "Visit your site at: http://localhost:${WEB_PORT}\n"
 fi
 
 ## CHECK DB (First time use)
 if [ "$INCOMPLETE_DB_CONFIG" ] && [ "$DO_DB_REFRESH" ]; then
     if [ "$LOCAL_DB" ] || [ "$CREATE_DB" ]; then
-#        sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "service mysql start"
-	printf "Using a local database, NOT fetching from a remote and then populating a local database. Just using a local one.\n"
+	printf "Using a local database, NOT fetching from a remote and populating a local database. Just using a local one.\n"
     else
         printf "Incomplete remote database configurations. Please check it if expecting a remote database to be pulled down to a local one with this site, and specify a domain or port!\n"
     fi
