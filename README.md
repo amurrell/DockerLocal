@@ -41,27 +41,38 @@ Great job! The site is running on localhost. Go to [localhost:3000](http://local
 
 **Tip**: use `./site-up -p=XXXX` to specify a different localhost:**port**
 
+
+Now **create a port file** to maintain this project without having to type the switch -p for every commands:
+
+- `./site-down` to shutdown containers
+- `cd DockerLocal && echo "3001" > port` 
+- `cd commands && ./site-up` (no need to use -p switch)
+
+Now it's running on your custom port 3001!
+
+Go to [localhost:3001](http://localhost:3001)
+
 #### With Empty Database
 
 - `cd DockerLocal/commands`
-- `./site-up -p=3001 -c=example_local_db`
+- `./site-up -c=example_local_db`, where switch -c means create database
 
-Great job! The site is running on localhost. Go to [localhost:3001](http://localhost:3001)
+Great job! The site is running on localhost, database is created, and php env vars are adjusted to reflect this db name. Go to [localhost:3001](http://localhost:3001)
 
-**Tip**: `-c` switch is the name of the local database to **create**
+Look at generated DockerLocal/env-custom.yml and generated php7-fpm.site.custom.conf
 
-- `./site-down -p=3001` to shut it down
-- `./site-up -p=3001 -l=example_local_db` to start up again use `-l` switch to **use** local db "example_local_db"
+- `./site-down` to shut it down
+- `./site-up` to start up again, which it will use local db "example_local_db" because it is stored in DockerLocal/database (from using the -c switch before)
+
+**Tip**: Can use -l switch to specify a different local database than the one saved in DockerLocal/database
 
 #### With Remote-fetched Database used as source for Local DB
 
 This will get a dump of a remote database and import it into a local copy in the mysql container.
 
 ```
-cd DockerLocal/commands
-# need to configure and put a databases.yml into DockerLocal!
-# choose a port that matches databases.yml entry for `PORT: DB NAME` eg 3001 from `3001: example_com`
-./site-up -p=3001
+#Copy DockerLocal/databases-example.yml to databases.yml and fill it out with your remote host information.
+./site-up
 ```
 
 Go to [localhost:3001](http://localhost:3001)
@@ -71,7 +82,7 @@ Go to [localhost:3001](http://localhost:3001)
 ## Share your site (Requires ngrok)
 
 - `cd DockerLocal/commands`
-- `./site-ngrok -p=3001`
+- `./site-ngrok`
 
 #### Install ngrok
 
@@ -82,7 +93,7 @@ Go to [localhost:3001](http://localhost:3001)
 ## Shut down
 
 - `cd DockerLocal/commands`
-- `./site-down -p=3001`
+- `./site-down`
 
 #### Proxy Down
 
@@ -94,34 +105,34 @@ Go to [localhost:3001](http://localhost:3001)
 #### Create
 
 - `cd DockerLocal/commands`
-- `./site-db -p=3001 -c=example_database_name`
+- `./site-db -c=example_database_name`
 
 #### Use Locally Created DB
 
 - `cd DockerLocal/commands`
-- `./site-db -p=3001 -l=example_database_name`
+- `./site-db -l=example_database_name` (if DockerLocal/database exists, the -l switch is not needed)
 
 #### Use a remote database to create local db
 
-- setup databases.yml
+- setup databases.yml by copying contents from DockerLocal/databases-example.yml
 - `cd DockerLocal/commands`
-- `./site-up -p=3001` if you have never ran it before. This will create a db-name.sql.remote.dump file.
+- `./site-up` this will create a db-name.sql.remote.dump file, one time.
 
 #### Re-fetch remote database to update local db (needs databases.yml).
 
 - ensure databases.yml is up to date
 - `cd DockerLocal/commands`
-- `./site-db -p=3001`
+- `./site-db`
 
 #### Import a file ( including create database sql )
 
 - `cd DockerLocal/commands`
-- `./site-db -p=3001 -f=import-complete.sql`
+- `./site-db -f=import-complete.sql`
 
 #### Import a file to an existing local db
 
 - `cd DockerLocal/commands`
-- `./site-db -p=3001 -i=name_of_local_db -f=import-partial.sql`
+- `./site-db -i=name_of_local_db -f=import-partial.sql`
 
 ----
 
@@ -232,7 +243,7 @@ Steps (one time thing):
 - git clone **ProxyLocal** in *vhosts* or equivalent so that it is at the same level as your sites
 - create sites.yml from sites-example.yml, try: `3001: docker.example.com`
 - go to ProxyLocal/commands and run ./proxy-up command
-- do normal DockerLocal setup; now can use `./site-up -n=docker.example.com`
+- do normal DockerLocal setup; now can use `./site-up -n=docker.example.com` or `./site-up` if you have a port file in your DockerLocal that matches an entry in sites.yml
 
 Commands:
 
@@ -258,9 +269,13 @@ sites:
     3001: docker.example.com
 ```
 
+By adding a `port: site` to sites.yml, you can go to your DockerLocal project and do `./site-up -p=port` or if you have a port file `./site-up` and it will automatically boot up ProxyLocal if not already running.
+
+**Tip**: ProxyLocal handles nginx conf enabling - if you have to do it manually you can do `cd ProxyLocal/commands && ./proxy-nginx -p=3001` to enable nginx conf for site at port 3001 and `./proxy-nginx -p=3001 -d=true` to disable it.
+
 #### ProxyLocal/databases.yml
 
-You can use one databases.yml in ProxyLocal like this:
+You can use one databases.yml in ProxyLocal like this if all your data is at the same remote host, with same user/pass combo:
 
 ```
 databases:

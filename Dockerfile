@@ -22,7 +22,10 @@ RUN	apt-get update && \
 	apt-get -y install libcurl3-openssl-dev && \
 	apt-get -y install libyaml-dev && \
 	apt-get -y install php7.0-zip && \
-        apt-get -y install php-memcached
+	apt-get -y install php7.0-mbstring && \
+	apt-get -y install php-memcached && \
+	apt-get -y install php7.0-pgsql && \
+	apt-get -y install php7.0-xml
 
 RUN pear config-set php_ini /etc/php/7.0/fpm/php.ini
 RUN pecl config-set php_ini /etc/php/7.0/fpm/php.ini
@@ -62,6 +65,9 @@ RUN rm /etc/php/7.0/fpm/pool.d/www.conf
 
 # Adjust www-data
 RUN usermod -u 1000 www-data
+
+# Install composer
+RUN apt-get -y install composer
 
 # Start memcached?
 #RUN service memcached start
