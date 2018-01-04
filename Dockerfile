@@ -67,7 +67,7 @@ RUN rm /etc/php/7.0/fpm/pool.d/www.conf
 RUN usermod -u 1000 www-data
 
 # Install composer
-RUN apt-get -y install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Start memcached?
 #RUN service memcached start
