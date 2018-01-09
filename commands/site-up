@@ -341,7 +341,30 @@ if [ "$SITE_DOWN" ]; then
     exit 1
 fi
 
-## SSH into a container
+## SSH into web as www-data
+if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'web' ]; then
+    # Make sure that www-data's id is the same as the host user id, so that when
+    # creating files from the container, their permissions are the same.
+    CUR_UID=$(echo $UID)
+    USERMOD_COMMAND="usermod -u ${CUR_UID} www-data"
+    sudo docker exec "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash -c "${USERMOD_COMMAND} > /dev/null 2>&1"
+    sudo docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash -c "su -l www-data -s /bin/bash && cd /var/www/site"
+    exit 1
+fi
+
+## SSH into web as root
+if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'webroot' ]; then
+    sudo docker exec -t -i "${DOCKER_NAME}"_web_1 /bin/bash
+    exit 1
+fi
+
+## SSH into mysql
+if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'mysql' ]; then
+    sudo docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash -c "mysql -u root -p1234"
+    exit 1
+fi
+
+## SSH into other containers
 if [ "$SITE_SSH" ]; then
     sudo docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash
     exit 1
