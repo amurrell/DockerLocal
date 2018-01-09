@@ -134,6 +134,15 @@ Go to [localhost:3001](http://localhost:3001)
 - `cd DockerLocal/commands`
 - `./site-db -i=name_of_local_db -f=import-partial.sql`
 
+
+#### Ssh into the containers
+
+    - `./site-ssh -h=mysql` and you'll be in mysql app as root user of mysql
+    - `./site-ssh -h=mysqlroot` to get into the container as root shell user. Can do `mysql -u root -p1234` to get into mysql app.
+    - `./site-ssh -h=web` && `cd /var/www/site/` to see your project. Run commands that might create files (ie. php artisan for laravel projects) as this www-data user.
+    - `./site-ssh -h=webroot` to get into the web container as root. Good for looking at confs etc `cd /etc/php/7.0/fpm/pool.d` for php-fpm conf, or `cd /etc/nginx/` for nginx conf
+    - `./site-ssh -h=memcached` .. there's really no reason to be here.
+
 ----
 
 ## Config Files

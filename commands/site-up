@@ -364,6 +364,12 @@ if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'mysql' ]; then
     exit 1
 fi
 
+## SSH into mysql
+if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'mysqlroot' ]; then
+    sudo docker exec -t -i "${DOCKER_NAME}"_mysql_1 /bin/bash
+    exit 1
+fi
+
 ## SSH into other containers
 if [ "$SITE_SSH" ]; then
     sudo docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash
