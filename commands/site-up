@@ -73,9 +73,14 @@ if [ ! "$R" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
     REFRESH_DB=$R
 fi
 
-# c
-if [ ! "$C" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+# c - not from ssh (so a create db)
+if [ ! "$C" == "$1$2$3$4$5$6$7$8$9${10}" ] && [ "${SITE_SSH}" == '' ]; then
     CREATE_DB=$C
+fi
+
+# c - from ssh (so a command to follow)
+if [ ! "$C" == "$1$2$3$4$5$6$7$8$9${10}" ] && [ "${SITE_SSH}" != '' ]; then
+    SSH_COMMAND=$(sed -e 's#.*\-c=\(.*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9") # this one is special, bc command might have dashes
 fi
 
 # l
@@ -341,14 +346,25 @@ if [ "$SITE_DOWN" ]; then
     exit 1
 fi
 
+if [ "$SSH_COMMAND" != '' ]; then
+
+    if [ "$SITE_SSH" == 'webroot' ]; then
+        SSH_CONT='web'
+    elif [ "$SITE_SSH" == 'mysqlroot' ]; then
+        SSH_CONT='web'
+    else
+        SSH_CONT="$SITE_SSH"
+    fi
+
+    # Run the command. the /bin/bash -i makes the shell relative to inside the
+    # container so that it's able to see aliases and the bashrc
+    sudo docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash -i -c "${SSH_COMMAND}"
+    exit 1
+fi
+
 ## SSH into web as www-data
 if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'web' ]; then
-    # Make sure that www-data's id is the same as the host user id, so that when
-    # creating files from the container, their permissions are the same.
-    CUR_UID=$(echo $UID)
-    USERMOD_COMMAND="usermod -u ${CUR_UID} www-data"
-    sudo docker exec "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash -c "${USERMOD_COMMAND} > /dev/null 2>&1"
-    sudo docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash -c "su -l www-data -s /bin/bash && cd /var/www/site"
+    sudo docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 bash -c 'cd /var/www/site && su -s /bin/bash -l www-data -m'
     exit 1
 fi
 
@@ -381,6 +397,11 @@ fi
 # sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" down
 # Up
 sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
+
+# right after its up change www-data user to match cur user
+CUR_UID=$(echo $UID)
+USERMOD_COMMAND="usermod -u ${CUR_UID} www-data"
+./site-ssh -h=web -c="${USERMOD_COMMAND}"
 
 # Network is up; handle nginx if site is up
 if [ ! "${PROXYLOCAL_NETWORK}" == '' ] && [ ! "$SITE_DOWN" ] && [ ! "$SITE_DOMAIN" == '' ]; then

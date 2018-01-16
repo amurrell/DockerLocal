@@ -52,6 +52,9 @@ RUN ln -s /etc/nginx/sites-available/nginx.site.conf /etc/nginx/sites-enabled/
 # Append "daemon off;" to the configuration file
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 
+# Append source brc alias to the bashrc profile file
+RUN echo 'alias brc="source /root/.bashrc"' >> /root/.bashrc
+
 # Copy a configuration file from the current directory
 ADD php7-fpm.site.custom.conf /etc/php/7.0/fpm/pool.d
 

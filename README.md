@@ -143,6 +143,8 @@ Go to [localhost:3001](http://localhost:3001)
     - `./site-ssh -h=webroot` to get into the web container as root. Good for looking at confs etc `cd /etc/php/7.0/fpm/pool.d` for php-fpm conf, or `cd /etc/nginx/` for nginx conf
     - `./site-ssh -h=memcached` .. there's really no reason to be here.
 
+    - `./site-ssh -h=web -c='cat /etc/passwd' where -c is a command to pass into the web container. Notice the difference between using single quotes. ie `-c="$(whoami)"` and `-c='$(whoami)'`.
+
 ----
 
 ## Config Files
