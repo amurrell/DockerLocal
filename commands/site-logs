@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+P=false
+E=false
+A=false
+
+while getopts ":pea" option; do
+  case $option in
+    h) echo "usage: $0 [-h (help)] [-p (php)] [-e (error)] [-a (access)]"; exit ;;
+    p) P=true ;;
+    e) E=true ;;
+    a) A=true ;;
+  esac
+done
+
+if [ $P = 'true' ]; then
+  tail -f ../logs/php_error_log.log
+elif [ $A = 'true' ]; then
+  tail -f ../logs/access.log
+elif [ $E = 'true' ]; then
+  tail -f ../logs/error.log
+else
+  tail -f ../logs/*.log
+fi
