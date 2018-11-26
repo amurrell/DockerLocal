@@ -270,47 +270,29 @@ if [ -f "${ENV_FILE}" ]; then
     sed -i'.bak' "s/DATABASE_PORT/${MYSQL_PORT}/g;" $ENV_FILE_CUSTOM
     rm "${ENV_FILE_CUSTOM}.bak"
 
-    declare -A ENVS
-    parse_yaml() {
-       local prefix=$2
-       local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
-       sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
-            -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
-       awk -F$fs '{
-          indent = length($1)/2;
-          vname[indent] = $2;
-          for (i in vname) {if (i > indent) {delete vname[i]}}
-          if (length($3) > 0) {
-             vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
-             printf("%s[%s]=\"{%s}\"\n", "ENVS", $2, $3);
-          }
-       }'
-    }
-
-    eval $(parse_yaml $ENV_FILE_CUSTOM)
+    ENVS=$(sed -e 's/:[^:\/\/]/="/g;s/$/"/g;s/ *=/=/g' $ENV_FILE_CUSTOM)
+    
+    # last line keeps getting cut off so just add a placeholder
+    placeholder="env[placeholder]=true"
+    ENVS=$(printf "${ENVS}\n${placeholder}")
 
     # add envs to custom php file
-
     rm -f $PHP_FILE_CUSTOM
     cp $DEFAULT_PHP_FILE $PHP_FILE_CUSTOM
 
-    for i in "${!ENVS[@]}"
-    do
-      VALUE="${ENVS[$i]}\n"
-      NEWLINE=";ENV"
-      CONF="$(printf "env[$i]=${VALUE}")#"
-      sed -i'.bak' "s/;ENV/${CONF}${NEWLINE}\
-      /g" $PHP_FILE_CUSTOM
-    done
+    for line in $ENVS; do
+        VALUE="$line\n"
+        NEWLINE=";ENV"
+        CONF="$(printf "${VALUE}")#"
 
-    # Replace {} hack with " to ensure vars are quoted
-    tr '{' '"' < "${PHP_FILE_CUSTOM}.bak" > "${PHP_FILE_CUSTOM}.bak2"
-    tr '}' '"' < "${PHP_FILE_CUSTOM}.bak2" > "${PHP_FILE_CUSTOM}.bak"
+        REPLACE=$(echo ${CONF}${NEWLINE} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')
+        printf "$REPLACE\n"
+        sed -i'.bak' "s|;ENV|$REPLACE|g" $PHP_FILE_CUSTOM
+    done
 
     # Get around osx not liking sed + new lines
     tr '#' '\n' < "${PHP_FILE_CUSTOM}.bak" > $PHP_FILE_CUSTOM
 
-    rm "${PHP_FILE_CUSTOM}.bak2"
     rm "${PHP_FILE_CUSTOM}.bak"
 fi
 

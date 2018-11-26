@@ -5,25 +5,25 @@ FROM        ubuntu:16.04
 MAINTAINER Angela Murrell
 
 # Update the repository and install nginx and php7.2
-RUN         apt-get update && \
-            apt-get install -y nano && \
-            apt-get install -y curl && \
-            apt-get install -y sudo && \
-            apt-get install -y wget && \
-            apt-get install -y git && \
-            apt-get install -y unzip && \
-            apt-get install -y ufw && \
-			apt-get install -y software-properties-common && \
-			apt-get install -y python-software-properties && \
-			apt-get install -y nginx
+
+RUN apt-get update && apt-get install -y nano && \
+	apt-get install -y curl && \
+	apt-get install -y sudo && \
+	apt-get install -y wget && \
+	apt-get install -y git && \
+	apt-get install -y unzip && \
+	apt-get install -y ufw && \
+	apt-get install -y software-properties-common && \
+	apt-get install -y python-software-properties && \
+	apt-get install -y nginx
 
 RUN 		LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php && \
-			apt-get update
+	apt-get update
 
 RUN         apt-get -y --no-install-recommends install php7.2 && \
-            apt-get -y --no-install-recommends install php7.2-fpm && \
-            apt-get clean && \
-            rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+	apt-get -y --no-install-recommends install php7.2-fpm && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Install more stuff
 RUN	apt-get update && \
@@ -35,6 +35,7 @@ RUN	apt-get update && \
 	apt-get -y install libyaml-dev && \
 	apt-get -y install php-zip && \
 	apt-get -y install php-mbstring && \
+	apt-get -y install php-gd && \
 	apt-get -y install php-memcached && \
 	apt-get -y install php-pgsql && \
 	apt-get -y install php-xml
@@ -72,8 +73,8 @@ ADD php7-fpm.site.custom.conf /etc/php/7.2/fpm/pool.d
 
 # daemon off for php also
 RUN sed -i "/;daemonize = .*/c\daemonize = no" /etc/php/7.2/fpm/php-fpm.conf && \
-    sed -i "/variables_order = .*/c\variables_order = \"EGPCS\"" /etc/php/7.2/fpm/php.ini && \
-    sed -i "/pid = .*/c\;pid = /run/php/php7.2-fpm.pid" /etc/php/7.2/fpm/php-fpm.conf
+	sed -i "/variables_order = .*/c\variables_order = \"EGPCS\"" /etc/php/7.2/fpm/php.ini && \
+	sed -i "/pid = .*/c\;pid = /run/php/php7.2-fpm.pid" /etc/php/7.2/fpm/php-fpm.conf
 
 # Remove pool.d/www.conf
 RUN rm /etc/php/7.2/fpm/pool.d/www.conf
