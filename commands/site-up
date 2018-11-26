@@ -286,7 +286,6 @@ if [ -f "${ENV_FILE}" ]; then
         CONF="$(printf "${VALUE}")#"
 
         REPLACE=$(echo ${CONF}${NEWLINE} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')
-        printf "$REPLACE\n"
         sed -i'.bak' "s|;ENV|$REPLACE|g" $PHP_FILE_CUSTOM
     done
 
