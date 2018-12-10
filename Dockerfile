@@ -2,7 +2,7 @@
 FROM        ubuntu:16.04
 
 # File Author / Maintainer
-MAINTAINER Angela Murrell
+LABEL maintainer "Angela Murrell <me@angelamurrell.com>"
 
 # Update the repository and install nginx and php7.2
 
@@ -14,21 +14,37 @@ RUN apt-get update && apt-get install -y nano && \
 	apt-get install -y unzip && \
 	apt-get install -y ufw && \
 	apt-get install -y software-properties-common && \
+	apt-get install -y apt-transport-https && \
 	apt-get install -y python-software-properties && \
 	apt-get install -y nginx
 
-RUN 		LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php && \
+RUN LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php && \
 	apt-get update
 
-RUN         apt-get -y --no-install-recommends install php7.2 && \
+RUN apt-get update && \ 
+	apt-get -y --no-install-recommends install php7.2 && \
 	apt-get -y --no-install-recommends install php7.2-fpm && \
+	apt-get -y install freetds-bin tdsodbc unixodbc unixodbc-dev && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
+# add msodbcsql packages
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
+
+# install msodbcsql and associated tools
+RUN apt-get update
+RUN ACCEPT_EULA=Y apt-get install -y msodbcsql17
+RUN ACCEPT_EULA=Y apt-get install -y mssql-tools
+
+# add msssql-tools to path 
+RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+
 # Install more stuff
 RUN	apt-get update && \
-	apt-get install -y php-curl && \
-	apt-get install -y php-mysql && \
+	apt-get -y install php-curl && \
+	apt-get -y install php-mysql && \
 	apt-get -y install php-pear && \
 	apt-get -y install php-dev && \
 	apt-get -y install libcurl3-openssl-dev && \
@@ -36,13 +52,23 @@ RUN	apt-get update && \
 	apt-get -y install php-zip && \
 	apt-get -y install php-mbstring && \
 	apt-get -y install php-gd && \
+	apt-get -y install php-sybase && \
 	apt-get -y install php-memcached && \
 	apt-get -y install php-pgsql && \
 	apt-get -y install php-xml
 
+RUN printf "\n" | pecl install sqlsrv
+RUN printf "\n" | pecl install pdo_sqlsrv
 RUN pear config-set php_ini /etc/php/7.2/fpm/php.ini
 RUN pecl config-set php_ini /etc/php/7.2/fpm/php.ini
 RUN printf "\n" | pecl install yaml-2.0.0
+
+RUN echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/30-pdo_sqlsrv.ini
+RUN echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20-sqlsrv.ini
+
+# copy 30-pdo_sqlsrv.ini to some locations for loading
+RUN cp /etc/php/7.2/cli/conf.d/20-sqlsrv.ini /etc/php/7.2/fpm/conf.d
+RUN cp /etc/php/7.2/cli/conf.d/30-pdo_sqlsrv.ini /etc/php/7.2/fpm/conf.d
 
 # export var for nano to work in command line
 ENV TERM xterm
