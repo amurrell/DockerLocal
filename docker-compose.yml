@@ -20,6 +20,7 @@ services:
             - memcached
     mysql:
         image: mysql
+        command: mysqld --default-authentication-plugin=mysql_native_password
         restart: always
         ports:
             - "MYSQL_PORT:3306"
