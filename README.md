@@ -9,6 +9,7 @@
 ## Requirements
 
 - Bash 4+ (MacOS default 3.2.57, needs brew install)
+- Docker-compose (tested with docker-compose version 1.24.1, build 4667896b)
 - Docker
 
     Tested with:
