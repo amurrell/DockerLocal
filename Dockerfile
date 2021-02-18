@@ -17,7 +17,8 @@ RUN apt-get update && apt-get install -y nano && \
 	apt-get install -y ufw && \
 	apt-get install -y software-properties-common && \
 	apt-get install -y apt-transport-https && \
-	apt-get install -y nginx
+	apt-get install -y nginx && \
+	apt-get install -y unixodbc-dev
 
 RUN LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php && \
 	apt-get update
@@ -29,6 +30,11 @@ RUN apt-get update && \
 	apt-get -y install freetds-bin tdsodbc unixodbc unixodbc-dev && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+
+# Set which PHP we want to use
+RUN sudo update-alternatives --set php /usr/bin/php7.3
+RUN sudo update-alternatives --set phar /usr/bin/phar7.3
+RUN sudo update-alternatives --set phar.phar /usr/bin/phar.phar7.3
 
 # add msodbcsql packages
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
@@ -45,27 +51,27 @@ RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
 
 # Install more stuff
 RUN	apt-get update && \
-	apt-get -y install php-curl && \
-	apt-get -y install php-mysql && \
+	apt-get -y install php7.3-curl && \
+	apt-get -y install php7.3-mysql && \
 	apt-get -y install php-pear && \
 	apt-get -y install php-dev && \
 	apt-get -y install libcurl3-openssl-dev && \
 	apt-get -y install libyaml-dev && \
-	apt-get -y install php-zip && \
-	apt-get -y install php-mbstring && \
-	apt-get -y install php-gd && \
-	apt-get -y install php-sybase && \
-	apt-get -y install php-memcached && \
-	apt-get -y install php-pgsql && \
-	apt-get -y install php-xml && \
-	apt-get -y install php-intl && \
-	apt-get -y install php-gd
+	apt-get -y install php7.3-zip && \
+	apt-get -y install php7.3-mbstring && \
+	apt-get -y install php7.3-gd && \
+	apt-get -y install php7.3-sybase && \
+	apt-get -y install php7.3-memcached && \
+	apt-get -y install php7.3-pgsql && \
+	apt-get -y install php7.3-xml && \
+	apt-get -y install php7.3-intl && \
+	apt-get -y install php7.3-gd
 
 RUN printf "\n" | pecl install sqlsrv
 RUN printf "\n" | pecl install pdo_sqlsrv
 RUN pear config-set php_ini /etc/php/7.3/fpm/php.ini
 RUN pecl config-set php_ini /etc/php/7.3/fpm/php.ini
-RUN printf "\n" | pecl install yaml-2.0.4
+RUN printf "\n" | pecl install yaml-2.2.1
 
 RUN echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/30-pdo_sqlsrv.ini
 RUN echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20-sqlsrv.ini
