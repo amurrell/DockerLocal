@@ -3,6 +3,8 @@
 # start with default port value and name
 WEB_PORT=3000
 PORT_FILE="../port"
+WEB_SERVER_ROOT="/var/www/site/html"
+WEB_SERVER_ROOT_FILE="../web-server-root"
 DEFAULT_SITES_FILE="../../../ProxyLocal/sites.yml"
 
 DEFAULT_ENV_FILE="../env-example.yml"
@@ -11,6 +13,10 @@ ENV_FILE_CUSTOM="../env-custom.yml"
 DEFAULT_PHP_FILE="../php7-fpm.site.conf"
 PHP_FILE_CUSTOM="../php7-fpm.site.custom.conf"
 
+DEFAULT_NGINX_FILE="../nginx.site.conf"
+NGINX_FILE_CUSTOM="../nginx.site.custom.conf"
+NGINX_FILE_COMPUTED="../nginx.site.computed.conf"
+
 DEFAULT_PROXY_DATABASES_FILE="../../../ProxyLocal/databases.yml"
 DEFAULT_DOCKER_DATABASES_FILE="../databases.yml"
 
@@ -18,73 +24,89 @@ DEFAULT_DOCKERFILE_FILE="Dockerfile"
 CUSTOM_DOCKERFILE_FILE="Dockerfile-custom"
 
 # Process Arguments:
-P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
-N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
-S=$(sed -e 's#.*\-s=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
-D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
-K=$(sed -e 's#.*\-k=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
-M=$(sed -e 's#.*\-m=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
-H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
-R=$(sed -e 's#.*\-r=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
-C=$(sed -e 's#.*\-c=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
-L=$(sed -e 's#.*\-l=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
+N=$(sed -e 's#.*\-n=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
+S=$(sed -e 's#.*\-s=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
+D=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
+K=$(sed -e 's#.*\-k=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
+M=$(sed -e 's#.*\-m=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
+H=$(sed -e 's#.*\-h=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
+R=$(sed -e 's#.*\-r=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
+C=$(sed -e 's#.*\-c=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
+L=$(sed -e 's#.*\-l=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
+W=$(sed -e 's#.*\-w=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
 
-if [ "$P" == "$1$2$3$4$5$6$7$8$9${10}" ] && [ -f  "${PORT_FILE}" ]; then
+if [ "$P" == "$1$2$3$4$5$6$7$8$9${10}${11}" ] && [ -f  "${PORT_FILE}" ]; then
     P=$(eval cat ${PORT_FILE});
 fi
 
+if [ "$W" == "$1$2$3$4$5$6$7$8$9${10}${11}" ] && [ -f  "${WEB_SERVER_ROOT_FILE}" ]; then
+    W=$(eval cat ${WEB_SERVER_ROOT_FILE});
+fi
+
 # p
-if [ ! "$P" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+if [ ! "$P" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
     WEB_PORT=$P
 fi
 
+echo "$WEB_PORT"
+
+# w
+if [ ! "$W" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
+    WEB_SERVER_ROOT=$W
+
+    if [ ! -f  "${WEB_SERVER_ROOT_FILE}" ]; then
+        echo "${W}" > $WEB_SERVER_ROOT_FILE
+    fi
+fi
+
 # n
-if [ ! "$N" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+if [ ! "$N" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
     NAME=$N
 fi
 
 # s
-if [ ! "$S" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+if [ ! "$S" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
     SITES_FILE=$S
 fi
 
 # d
-if [ ! "$D" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
-    SITE_DOWN=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}")
+if [ ! "$D" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
+    SITE_DOWN=$(sed -e 's#.*\-d=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
 fi
 
 # k
-if [ ! "$K" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+if [ ! "$K" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
     NGROK=$K
 fi
 
 # m
-if [ ! "$M" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+if [ ! "$M" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
     SITE_DB=$M
 fi
 
 # h
-if [ ! "$H" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+if [ ! "$H" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
     SITE_SSH=$H
 fi
 
 # r
-if [ ! "$R" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+if [ ! "$R" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
     REFRESH_DB=$R
 fi
 
 # c - not from ssh (so a create db)
-if [ ! "$C" == "$1$2$3$4$5$6$7$8$9${10}" ] && [ "${SITE_SSH}" == '' ]; then
+if [ ! "$C" == "$1$2$3$4$5$6$7$8$9${10}${11}" ] && [ "${SITE_SSH}" == '' ]; then
     CREATE_DB=$C
 fi
 
 # c - from ssh (so a command to follow)
-if [ ! "$C" == "$1$2$3$4$5$6$7$8$9${10}" ] && [ "${SITE_SSH}" != '' ]; then
-    SSH_COMMAND=$(sed -e 's#.*\-c=\(.*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9") # this one is special, bc command might have dashes
+if [ ! "$C" == "$1$2$3$4$5$6$7$8$9${10}${11}" ] && [ "${SITE_SSH}" != '' ]; then
+    SSH_COMMAND=$(sed -e 's#.*\-c=\(.*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}") # this one is special, bc command might have dashes
 fi
 
 # l
-if [ ! "$L" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+if [ ! "$L" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
     LOCAL_DB=$L
 fi
 
@@ -126,7 +148,7 @@ if [ ! "$PROXYLOCAL_LOC" == "" ]; then
 fi
 
 # Determine WEB_PORT from sites.yml (if it exists) and if no port file or port switch specified
-if [ "$NAME" ] && [ "$PROXYLOCAL_SITES" ] && [ ! -f  "${PORT_FILE}" ] && [ "$P" == "$1$2$3$4$5$6$7$8$9${10}" ]; then
+if [ "$NAME" ] && [ "$PROXYLOCAL_SITES" ] && [ ! -f  "${PORT_FILE}" ] && [ "$P" == "$1$2$3$4$5$6$7$8$9${10}${11}" ]; then
     PORTPART=$(eval cat $PROXYLOCAL_SITES | awk "/: ${NAME}/"' { print $1 }')
     WEB_PORT="${PORTPART/:/}"
 fi
@@ -237,6 +259,7 @@ fi
 # CREATE DOCKER-COMPOSE - use variables
 MYSQL_PORT=$((3306 + $WEB_PORT))
 MEMCACHED_PORT=$((11211 + $WEB_PORT))
+REDIS_PORT=$((6379 + $WEB_PORT))
 DOCKER_NAME=$(echo "dockerlocal${WEB_PORT}")
 
 if [ "$CREATE_DB" ]; then
@@ -265,7 +288,14 @@ fi
 if [ -f "${ENV_FILE}" ]; then
     rm -f $ENV_FILE_CUSTOM
     cp $ENV_FILE $ENV_FILE_CUSTOM
-    sed -i'.bak' "s/DATABASE_NAME/${DB_NAME}/g;" $ENV_FILE_CUSTOM
+
+    # prevent empty env var in php
+    DB_NAME_REPLACE="${DB_NAME}"
+    if [ "${DB_NAME_REPLACE}" == "" ]; then
+        DB_NAME_REPLACE="mysql"
+    fi
+
+    sed -i'.bak' "s/DATABASE_NAME/${DB_NAME_REPLACE}/g;" $ENV_FILE_CUSTOM
     sed -i'.bak' "s/DATABASE_HOST/mysql/g;" $ENV_FILE_CUSTOM
     sed -i'.bak' "s/DATABASE_PORT/${MYSQL_PORT}/g;" $ENV_FILE_CUSTOM
     rm "${ENV_FILE_CUSTOM}.bak"
@@ -295,6 +325,22 @@ if [ -f "${ENV_FILE}" ]; then
     rm "${PHP_FILE_CUSTOM}.bak"
 fi
 
+# NGINX custom and computed files
+if [ -f "${NGINX_FILE_CUSTOM}" ]; then
+ DEFAULT_NGINX_FILE="../nginx.site.custom.conf"
+fi
+
+# remove previous computed file; regenerate computed
+if [ -f  "${NGINX_FILE_COMPUTED}" ]; then
+    rm $NGINX_FILE_COMPUTED
+fi
+
+cp $DEFAULT_NGINX_FILE $NGINX_FILE_COMPUTED
+
+# replace NGINX vars 
+sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN}/g;" $NGINX_FILE_COMPUTED
+sed -i'.bak' "s:WEB_SERVER_ROOT:${WEB_SERVER_ROOT}:g;" $NGINX_FILE_COMPUTED
+rm "../nginx.site.computed.conf.bak"
 
 # Final checks for behavior
 
@@ -310,8 +356,10 @@ if [ "$WEB_PORT" == "3000" ]; then
 fi
 
 sed -i'.bak' "s/WEB_PORT/${WEB_PORT}/g;" $FILE
+sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN}/g;" $FILE
 sed -i'.bak' "s/MYSQL_PORT/${MYSQL_PORT}/g;" $FILE
 sed -i'.bak' "s/MEMCACHED_PORT/${MEMCACHED_PORT}/g;" $FILE
+sed -i'.bak' "s/REDIS_PORT/${REDIS_PORT}/g;" $FILE
 sed -i'.bak' "s/DOCKERFILE/${DOCKERFILE_FILE}/g;" $FILE
 
 sed -i'.bak' "s/DATABASE_NAME/${DB_NAME}/g;" $FILE
@@ -382,7 +430,8 @@ sudo docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
 # right after its up change www-data user to match cur user
 CUR_UID=$(echo $UID)
 USERMOD_COMMAND="usermod -u ${CUR_UID} www-data"
-./site-ssh -h=web -c="${USERMOD_COMMAND}"
+echo "going to run ./site-ssh"
+./site-ssh -p="$WEB_PORT" -h=web -c="${USERMOD_COMMAND}"
 
 # Network is up; handle nginx if site is up
 if [ ! "${PROXYLOCAL_NETWORK}" == '' ] && [ ! "$SITE_DOWN" ] && [ ! "$SITE_DOMAIN" == '' ]; then

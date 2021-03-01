@@ -1,129 +1,174 @@
 # DockerLocal
 
-**DockerLocal** is used for setting up a site to be served on localhost:PORT
+**DockerLocal** is used for setting up a LEMP site to be served on localhost:PORT
 
-**DockerLocal** runs on docker containers - nginx + php7.3-fpm, memcached, mysql and your project's web application files.
+**DockerLocal** runs on docker containers - nginx + php7.3-fpm, memcached, redis, mysql and your project's web application files. Provides customization for configuring the Dockerfile, nginx, php-fpm, and managing databases.
 
+> **Note:** Your DockerLocal containers can also be used with [ProxyLocal](https://github.com/amurrell/ProxyLocal) for a local DNS of all your DockerLocal projects so that you can run your sites locally at custom domains, like docker.yoursite.com and docker.anothersite.com
+
+---
+
+## Contents
+
+- [Requirements](#requirements)
+    - [Update Bash](#update-bash)
+- [Install](#install)
+    - [Clone - Where to put DockerLocal](#cloning-dockerlocal-into-your-project)
+    - [Simple Installation Examples](#simple-install-examples)
+        - [Ex: Basic](#ex-basic)
+        - [Ex: With specifc port](#ex-with-specific-port)
+        - [Ex: With New Empty Database](#ex--with-new-empty-database)
+        - [Ex: With Remote-fetched Database](#ex--remote-fetched-database)
+        - [Ex: With different root path](#ex--with-different-root-path)
+- [Commands](#commands)
+    - [Shut Down](#shut-down)
+    - [Database Commands](#database-commands)
+    - [SSH into containers](#ssh-into-the-containers)
+    - [Share your site](#share-your-site)
+- [Configuration Files](#configuration-files)
+    - [port](#dockerlocalport)
+    - [web-server-root](#dockerlocalweb-server-root)
+    - [nginx.site.custom.conf](#dockerlocalnginxsitecustomconf)
+    - [database](#dockerlocaldatabase)
+    - [database.yml](#dockerlocaldatabaseyml)
+    - [Dockerfile-custom](#dockerlocaldockerfile)
+    - [env-example.yml, env.yml](#dockerlocalenv-exampleyml-envyml)
+    - [php7-fpm.site.conf](#dockerlocalphp7-fpmsiteconf)
+    - [ecosystem.config.js](#dockerlocalecosystemconfigjs)
+- [Install NVM-PM2](#install-nvm-pm2)
+- [Install ProxyLocal](#install-proxylocal)
 ---
 
 ## Requirements
 
-- Bash 4+ (MacOS default 3.2.57, needs brew install)
-- Docker-compose (tested with docker-compose version 1.24.1, build 4667896b)
-- Docker
+- Bash 4+ (MacOS default 3.2.57, needs brew install), or Zsh
+- Docker for Mac (or Docker && Docker-Compose) - tested with Docker version 20.10.0, build 7287ab3
 
-    Tested with:
-  
-    ```
-     Client: Docker Engine - Community
-     Version:           19.03.1
-     API version:       1.40
-     Go version:        go1.12.5
-     Git commit:        74b1e89
-     Built:             Thu Jul 25 21:21:05 2019
-     OS/Arch:           linux/amd64
-     Experimental:      false
-
-    Server: Docker Engine - Community
-     Engine:
-      Version:          19.03.1
-      API version:      1.40 (minimum version 1.12)
-      Go version:       go1.12.5
-      Git commit:       74b1e89
-      Built:            Thu Jul 25 21:19:41 2019
-      OS/Arch:          linux/amd64
-      Experimental:     false
-     containerd:
-      Version:          1.2.6
-      GitCommit:        894b81a4b802e4eb2a91d1ce216b8817763c29fb
-     runc:
-      Version:          1.0.0-rc8
-      GitCommit:        425e105d5a03fabd737a126ad93d62a9eeede87f
-     docker-init:
-      Version:          0.18.0
-      GitCommit:        fec3683
-
-    ``` 
-
-#### Update Bash for MacOS
+#### Update Bash
 ```
 /bin/bash --version
 brew install bash
 /usr/local/bin/bash --version
 ```
 
-## Cloning DockerLocal into your project
+---
 
-Clone DockerLocal into **one level above your site's html folder** (assumes html/index.php) (configurable)
+# Install
 
-Assuming `/path/to/your/website/html/index.php` exists
+The following will cover how to install and use DockerLocal:
+
+1) Where to clone
+2) Simple installation examples
+
+### Cloning DockerLocal into your project
+
+Clone DockerLocal into **at the same level as your site's html folder**
 
 ```
-cd /path/to/your/website/
+- YourSite
+    - DockerLocal
+    - html/index.php
+    - conf
+```
+
+Assuming the above,
+
+```
+cd ~/code/YourSite
 git clone git@github.com:amurrell/DockerLocal.git
 ```
 
-## Simple Install
+> **Note:** You can also use DockerLocal as a git submodule
 
-#### No Database
+---
 
-- `cd DockerLocal/commands`
-- `./site-up`
+## Simple Install Examples
 
-Great job! The site is running on localhost. Go to [localhost:3000](http://localhost:3000)
+Control DockerLocal with shell commands. All the following examples rely upon: 
 
-**Tip**: use `./site-up -p=XXXX` to specify a different localhost:**port**
+1. Going to the commands folder. `cd DockerLocal/commands`
+2. Understanding that shell scripts are triggered with a `./` preceeding the command, eg. `./site-up`
+3. If you get prompted for a password, use your user's password for your computer!
 
+Examples:
 
-Now **create a port file** to maintain this project without having to type the switch -p for every commands:
+- [Ex: Basic](#ex-basic)
+- [Ex: With specifc port](#ex-with-specific-port)
+- [Ex: With New Empty Database](#ex--with-new-empty-database)
+- [Ex: With Remote-fetched Database](#ex--remote-fetched-database)
+- [Ex: With different root path](#ex--with-different-root-path)
 
-- `./site-down` to shutdown containers
-- `cd DockerLocal && echo "3001" > port` 
+---
+
+### Ex: Basic
+
+This will install your site at [localhost:3000](http://localhost:3000) with no custom configuration (no database, default port, default webserver's root path eg. html/index.php or html/index.html).
+
+- Run `./site-up`
+
+---
+
+### Ex: With specific port
+
+First, shutdown your previously loaded containers with `./site-down`. Skip if you have not ran `./site-up` yet.
+
+Then, use `./site-up -p=XXXX` to specify a different port, eg. localhost:**XXXX**
+
+**Tip:** [**create a port file**](#dockerlocalport) to maintain this project without having to type the switch -p for every command you run:
+
+- `./site-down` first, shutdown containers if you already started them on another port
+- `cd ../ && echo "3001" > port` this puts a file "port" in DockerLocal folder
 - `cd commands && ./site-up` (no need to use -p switch)
 
 Now it's running on your custom port 3001!
 
 Go to [localhost:3001](http://localhost:3001)
 
-#### With Empty Database
+---
 
-- `cd DockerLocal/commands`
-- `./site-up -c=example_local_db`, where switch -c means create database
+### Ex: With New Empty Database
 
-Great job! The site is running on localhost, database is created, and php env vars are adjusted to reflect this db name. Go to [localhost:3001](http://localhost:3001)
+To create a database, you can use the switch `-c=DB_NAME`. You only need to run this once.
 
-Look at generated DockerLocal/env-custom.yml and generated php7-fpm.site.custom.conf
+To edit the database name your DockerLocal containers will use a [database configuration file](#dockerlocaldatabase). You can change this, but you will still need to use the `-c` switch to create new databases (one time).
+
+- `./site-up -c=example_local_db`, where switch -c means create database. Run only 1 time to create.
+
+You can safely shutdown and start up again and it remembers you're using that db (in php env vars) - because of that configuration file.
 
 - `./site-down` to shut it down
-- `./site-up` to start up again, which it will use local db "example_local_db" because it is stored in DockerLocal/database (from using the -c switch before)
+- `./site-up` to start up again
 
-**Tip**: Can use -l switch to specify a different local database than the one saved in DockerLocal/database
+---
 
-#### With Remote-fetched Database used as source for Local DB
+### With Remote-fetched Database
 
-This will get a dump of a remote database and import it into a local copy in the mysql container.
+This example shows getting an sql dump of a remote database and importing it into *a local copy* in the mysql container.
+
+
+Copy the `DockerLocal/databases-example.yml` to [`DockerLocal\databases.yml`](#dockerlocaldatabasesyml) and fill it out with your remote host information.
 
 ```
-#Copy DockerLocal/databases-example.yml to databases.yml and fill it out with your remote host information.
 ./site-up
 ```
 
-Go to [localhost:3001](http://localhost:3001)
+---
+
+### With Different Root Path
+
+If your project's root path for the public website files are in a different folder, you can configure that via the [`DockerLocal/web-server-root` file](#dockerlocalweb-server-root).
+
+You can create this file initially with:
+
+`./site-up -w=/var/www/site/app/public`
+
+The first time you run that, it will create your configuration file. After that, it will only override that file if you pass -w again. To permanently change it, do so in the configuration file.
 
 ----
 
-## Share your site (Requires ngrok)
+## Commands
 
-- `cd DockerLocal/commands`
-- `./site-ngrok`
-
-#### Install ngrok
-
-- [Download ngrok](https://ngrok.com/download)
-- Unzip it to your **Applications** directory
-- `ln -s /Applications/ngrok /usr/local/bin/ngrok`
-
-## Shut down
+### Shut down
 
 - `cd DockerLocal/commands`
 - `./site-down`
@@ -133,7 +178,9 @@ Go to [localhost:3001](http://localhost:3001)
 - `cd ~/vhosts/ProxyLocal/commands`
 - `./proxy-down`
 
-## Database Commands
+---
+
+### Database Commands
 
 #### Create
 
@@ -167,22 +214,38 @@ Go to [localhost:3001](http://localhost:3001)
 - `cd DockerLocal/commands`
 - `./site-db -i=name_of_local_db -f=import-partial.sql`
 
+---
 
-#### Ssh into the containers
+### SSH into the containers
 
-    - `./site-ssh -h=mysql` and you'll be in mysql app as root user of mysql
-    - `./site-ssh -h=mysqlroot` to get into the container as root shell user. Can do `mysql -u root -p1234` to get into mysql app.
-    - `./site-ssh -h=web` && `cd /var/www/site/` to see your project. Run commands that might create files (ie. php artisan for laravel projects) as this www-data user.
-    - `./site-ssh -h=webroot` to get into the web container as root. Good for looking at confs etc `cd /etc/php/7.0/fpm/pool.d` for php-fpm conf, or `cd /etc/nginx/` for nginx conf
-    - `./site-ssh -h=memcached` .. there's really no reason to be here.
+- `./site-ssh -h=mysql` and you'll be in mysql app as root user of mysql
+- `./site-ssh -h=mysqlroot` to get into the container as root shell user. Can do `mysql -u root -p1234` to get into mysql app.
+- `./site-ssh -h=web` && `cd /var/www/site/` to see your project. Run commands that might create files (ie. php artisan for laravel projects) as this www-data user.
+- `./site-ssh -h=webroot` to get into the web container as root. Good for looking at confs etc `cd /etc/php/7.0/fpm/pool.d` for php-fpm conf, or `cd /etc/nginx/` for nginx conf
+- `./site-ssh -h=memcached` .. there's really no reason to be here.
 
-    - `./site-ssh -h=web -c='cat /etc/passwd' where -c is a command to pass into the web container. Notice the difference between using single quotes. ie `-c="$(whoami)"` and `-c='$(whoami)'`.
+- `./site-ssh -h=web -c='cat /etc/passwd' where -c is a command to pass into the web container. Notice the difference between using single quotes. ie `-c="$(whoami)"` and `-c='$(whoami)'`.
+
+---
+
+### Share your site
+
+Requires Ngrok
+
+- `cd DockerLocal/commands`
+- `./site-ngrok`
+
+#### Install ngrok
+
+- [Download ngrok](https://ngrok.com/download)
+- Unzip it to your **Applications** directory
+- `ln -s /Applications/ngrok /usr/local/bin/ngrok`
 
 ----
 
-## Config Files
+## Configuration Files
 
-#### DockerLocal/port
+### DockerLocal/port
 
 If you would like to create a default custom port (other than 3000) for all commands in this project, create a port file.
 
@@ -198,12 +261,63 @@ So, your commands would be so simple:
 ```
 ./site-up
 ./site-db
-./site-ngrok
 ./site-ssh -h=web
 ./site-down
 ```
 
-#### DockerLocal/databases.yml
+---
+
+### DockerLocal/web-server-root
+
+The default is root path is `/var/www/site/html`, which assumes that you have an `index.php` or `index.html` file directly in your `html` folder.
+
+What if your project was different?
+
+```
+- YourSite
+    - DockerLocal
+    - app/public/index.php
+    - conf
+```
+
+You can create this file initially with:
+
+`./site-up -w=/var/www/site/app/public`
+
+The first time you run that, it will create your configuration file. After that, it will only override that file if you pass -w again. To permanently change it, do so in the configuration file.
+
+To confirm that your path is loaded correctly, you can check your [`DockerLocal\nginx.site.computed.conf`](#dockerlocalnginxsitecomputedconf) file that is generated from running `./site-up`. You should see the `root YOURPATH` line in your nginx server block.
+
+---
+
+### DockerLocal/nginx.site.custom.conf
+
+Use this file to override the nginx.site.conf. You can start by copying the nginx.site.conf file and then making your edits.
+
+The nginx.site.computed.conf file is basically the same as your custom, but with variables computed. 
+
+The following variables are available to use in your nginx.site.custom.conf file:
+
+- **SITE_DOMAIN** - this is only going to work if you have ProxyLocal running
+- **WEB_SERVER_ROOT** - this is your web servers root path. See [DockerLocal/web-server-root](#dockerlocalweb-server-root)
+
+---
+
+### DockerLocal/database
+
+After running the `-c=DB_NAME` command, you will have a file in `DockerLocal/database` with the `DB_NAME` in it. 
+
+You can change this out by editing the file. To create new databases, you will still use the `-c` switch (1 time).
+
+You can use -l switch to specify a different local database than the one saved in DockerLocal/database - this just overrides which one to use, but doesn't edit the file.
+
+To confirm your `database` file is being read correctly, you can check the `DockerLocal/env-custom.yml` file for your DB_NAME.
+
+To confirm your `database` exists, you can ssh into the mysql container: `./site-ssh -h=mysql` and `show databases;`
+
+---
+
+### DockerLocal/databases.yml
 
 If you have a remote database to use as a source to populate your local database, create a databases.yml
 
@@ -219,7 +333,9 @@ databases:
     3001: example_com
 ```
 
-#### DockerLocal/env-example.yml, env.yml
+---
+
+### DockerLocal/env-example.yml, env.yml
 
 - This file is for PHP env vars. Make your own as env.yml if you need to customize it.
 - Can use for local database connection
@@ -252,29 +368,50 @@ env[DL_DB_PORT]="3306"
 env[DL_DB_LOCAL_PORT]="6307"
 ```
 
-#### DockerLocal/nginx.site.conf
-
-You can modify your root folder or other nginx configuration needs in this file.
-
-Change the *root* folder from html and *index* from index.php in this file!
-
-ex:
-```
-root /var/www/site/html;
-index index.php index.html;
-```
-
 #### DockerLocal/php7-fpm.site.conf
 
 This is a template file, for the outputted `php7-fpm.site.custom.conf`.
-Ensure you keep `;ENV` in your template for env vars to populate there. The rest is yours to modify!
+Ensure you keep `;ENV` in your template for env vars to populate there. The rest is yours to modify! 
 
+> **NOTE:** If you modify this file, it will look like unstaged file changes. 
+
+> **TODO:** change php7-fpm.site.custom.conf to be a computed file, and allow for edits to get stored in the custom file.)
+
+---
 
 #### DockerLocal/Dockerfile
 
 The "Web" container is defined by this DockerFile.
 
 If you need to install any other php libraries or what not, feel free to create a copy, edit and save as `Dockerfile-custom`, which will get used over Dockerfile.
+
+#### DockerLocal/ecosystem.config.js
+
+This file is a special configuration file for using with pm2, a process manager. PM2 is useful for projects that have workers, like laravel worker queues. 
+
+You can take advantage of the `DockerLocal\nvm-pm2` shell command that will install nvm and pm2 for you. 
+
+Here's how:
+
+```
+./site-ssh -h=webroot
+cd /var/www
+./nvm-pm2
+
+# logout
+
+# log back in (nvm will be sourced in your profile now)
+./site-ssh -h=webroot
+pm2 start
+```
+
+> **Note**: You have to run this stuff above every time you power up your containers. You will also want to re-run pm2 (eg pm2 restart) when you've made changes to your code that would affect these queues.
+
+---
+
+## Install nvm-pm2
+
+You can use pm2 with this project, but it's a bit more manual. Look at the documentation for the configuration file [DockerLocal/ecosystem.config.js](#dockerlocalecosystemconfigjs) for more information.
 
 ---
 
