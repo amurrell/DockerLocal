@@ -368,7 +368,9 @@ env[DL_DB_PORT]="3306"
 env[DL_DB_LOCAL_PORT]="6307"
 ```
 
-#### DockerLocal/php7-fpm.site.conf
+---
+
+### DockerLocal/php7-fpm.site.conf
 
 This is a template file, for the outputted `php7-fpm.site.custom.conf`.
 Ensure you keep `;ENV` in your template for env vars to populate there. The rest is yours to modify! 
@@ -379,13 +381,15 @@ Ensure you keep `;ENV` in your template for env vars to populate there. The rest
 
 ---
 
-#### DockerLocal/Dockerfile
+### DockerLocal/Dockerfile
 
 The "Web" container is defined by this DockerFile.
 
 If you need to install any other php libraries or what not, feel free to create a copy, edit and save as `Dockerfile-custom`, which will get used over Dockerfile.
 
-#### DockerLocal/ecosystem.config.js
+---
+
+### DockerLocal/ecosystem.config.js
 
 This file is a special configuration file for using with pm2, a process manager. PM2 is useful for projects that have workers, like laravel worker queues. 
 
