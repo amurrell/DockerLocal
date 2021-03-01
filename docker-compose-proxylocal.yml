@@ -11,12 +11,21 @@ services:
             - memcached
         expose:
             - "80"
+            - "433"
+            - "6001"
         networks:
             - dlocal-net
             - proxylocal_docker-proxy-net
         depends_on:
             - mysql
             - memcached
+        environment:
+            - REDIS_URL=redis://cache
+        ports:
+            - "6001:6001"
+            - "433:433"
+        extra_hosts:
+            - "SITE_DOMAIN:127.0.0.1"
     mysql:
         image: mysql
         command: mysqld --default-authentication-plugin=mysql_native_password
@@ -38,6 +47,13 @@ services:
         - "MEMCACHED_PORT:11211"
       networks:
             - dlocal-net
+    redis:
+        image: redis
+        restart: always
+        ports:
+            - "REDIS_PORT:6379"
+        networks:
+                - dlocal-net
 volumes:
     mysql-data-WEB_PORT:
         

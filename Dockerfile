@@ -54,7 +54,7 @@ RUN	apt-get update && \
 	apt-get -y install php7.3-curl && \
 	apt-get -y install php7.3-mysql && \
 	apt-get -y install php-pear && \
-	apt-get -y install php-dev && \
+	apt-get -y install php7.3-dev && \
 	apt-get -y install libcurl3-openssl-dev && \
 	apt-get -y install libyaml-dev && \
 	apt-get -y install php7.3-zip && \
@@ -65,13 +65,21 @@ RUN	apt-get update && \
 	apt-get -y install php7.3-pgsql && \
 	apt-get -y install php7.3-xml && \
 	apt-get -y install php7.3-intl && \
+	apt-get -y install php7.3-bcmath && \
+	apt-get -y install php7.3-redis && \
 	apt-get -y install php7.3-gd
 
-RUN printf "\n" | pecl install sqlsrv
-RUN printf "\n" | pecl install pdo_sqlsrv
-RUN pear config-set php_ini /etc/php/7.3/fpm/php.ini
-RUN pecl config-set php_ini /etc/php/7.3/fpm/php.ini
-RUN printf "\n" | pecl install yaml-2.2.1
+RUN pecl -d php_suffix=7.3 install sqlsrv
+RUN pecl uninstall -r sqlsrv
+
+RUN pecl -d php_suffix=7.3 install pdo_sqlsrv
+RUN pecl uninstall -r pdo_sqlsrv
+
+RUN pecl -d php_suffix=7.3 install redis
+RUN pecl uninstall -r redis
+
+RUN pecl -d php_suffix=7.3 install yaml-2.2.1
+RUN pecl uninstall -r yaml-2.2.1
 
 RUN echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/30-pdo_sqlsrv.ini
 RUN echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/20-sqlsrv.ini
@@ -90,13 +98,13 @@ WORKDIR /var/www/
 RUN mkdir /var/www/site
 
 # Copy a configuration file from the current directory
-ADD nginx.site.conf /etc/nginx/sites-available/
+ADD nginx.site.computed.conf /etc/nginx/sites-available/
 
 # Remove symbolic link to default enabled nginx site in sites-enabled
 RUN rm /etc/nginx/sites-enabled/default
 
 # Make Symbolic link to enable the site
-RUN ln -s /etc/nginx/sites-available/nginx.site.conf /etc/nginx/sites-enabled/
+RUN ln -s /etc/nginx/sites-available/nginx.site.computed.conf /etc/nginx/sites-enabled/
 
 # Append "daemon off;" to the configuration file
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
@@ -106,6 +114,9 @@ RUN echo 'alias brc="source /root/.bashrc"' >> /root/.bashrc
 
 # Copy a configuration file from the current directory
 ADD php7-fpm.site.custom.conf /etc/php/7.3/fpm/pool.d
+
+# Copy the nvm-pm2 script over
+ADD nvm-pm2.sh /var/www
 
 # daemon off for php also
 RUN sed -i "/;daemonize = .*/c\daemonize = no" /etc/php/7.3/fpm/php-fpm.conf && \
@@ -119,7 +130,7 @@ RUN rm /etc/php/7.3/fpm/pool.d/www.conf
 RUN usermod -u 1000 www-data
 
 # Install composer
-#RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Start memcached?
 #RUN service memcached start

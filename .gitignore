@@ -1,9 +1,23 @@
-docker-compose-custom.yml
+# DockerLocal Custom Config files #
+######################
 databases.yml
 env.yml
-php7-fpm.site.custom.conf
-env-custom.yml
-*.bak
 Dockerfile-*
 port
 database
+nginx.site.custom.conf
+web-server-root
+
+# DockerLocal Generated Files #
+######################
+docker-compose-custom.yml
+php7-fpm.site.custom.conf
+nginx.site.computed.conf
+env-custom.yml
+*.bak
+
+# OS generated files #
+######################
+.DS_Store*
+ehthumbs.db
+Thumbs.db
