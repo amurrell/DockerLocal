@@ -7,6 +7,7 @@ port
 database
 nginx.site.custom.conf
 web-server-root
+ecosystem.config.js
 
 # DockerLocal Generated Files #
 ######################

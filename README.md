@@ -22,6 +22,7 @@
         - [Ex: With different root path](#ex--with-different-root-path)
 - [Commands](#commands)
     - [Shut Down](#shut-down)
+    - [Checking Logs](#checking-logs)
     - [Database Commands](#database-commands)
     - [SSH into containers](#ssh-into-the-containers)
     - [Share your site](#share-your-site)
@@ -180,6 +181,33 @@ The first time you run that, it will create your configuration file. After that,
 
 ---
 
+### Checking Logs
+
+If you want to check your log files, you can find them in `DockerLocal/logs`. 
+
+Your queue logs, access.log, php_error_log.log and error.log are all in that folder.
+
+For quick tailing of the logs, you can use the `DockerLocal/commands` for `./site-logs`:
+
+Ex: In your code
+
+```
+error_log(json_encode($myObject));
+```
+
+Ex: In your terminal, in `DockerLocal/commands`:
+
+```
+./site-logs     # All the logs are tailed
+./site-logs -p  # Only php_error_log is tailed
+./site-logs -e  # Only error_log is tailed
+./site-logs -a  # Only access.log is tailed
+./site-logs -h  # Help to find what the switches are 
+```
+
+
+---
+
 ### Database Commands
 
 #### Create
@@ -203,6 +231,25 @@ The first time you run that, it will create your configuration file. After that,
 - ensure databases.yml is up to date
 - `cd DockerLocal/commands`
 - `./site-db`
+
+#### Export local database
+
+1. If you don't know then name of your current database:
+    - `cat DockerLocal/database` 
+
+1. If you want to see all databases you have locally:
+    - `cd DockerLocal/commands` && `./site-ssh -h=mysql` && `show databases;`
+
+1. If you know the name of your local db then:
+    - `cd DockerLocal/commands`
+    - `./site-db -d=your_db` 
+
+    This generates a file `DockerLocal/data/dumps/your_db.sql.dump` which you may want to rename so you wont write over this from subsequent dumps.
+
+1. If you want this dump to include add/drop SQL:
+
+    - `cd DockerLocal/commands`
+    - `./site-db -d=your_db -a=true`
 
 #### Import a file ( including create database sql )
 
