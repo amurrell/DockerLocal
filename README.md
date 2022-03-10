@@ -307,8 +307,11 @@ Requires Ngrok
 ### Version Overrides
 
 You can use the defaults or choose a different version for:
-- **ubuntu** & **php** versions in the `Dockerfile-template`
-- **mysql or mariadb** version in `docker-compose-custom.yml` for the mysql image
+- **ubuntu** & **php** versions in the `Dockerfile-template`. Variables (used in the file) are:
+    - UBUNTU_VERSION
+    - PHP_VERSION
+- **mysql or mariadb** version in `docker-compose-custom.yml` for the mysql image. Variable (used in the file) is:
+    - DB_IMAGE
 
 You can see the default configs in `DockerLocal/version` in the form of files:
 
