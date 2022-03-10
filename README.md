@@ -44,6 +44,7 @@
 
 - Bash 4+ (MacOS default 3.2.57, needs brew install), or Zsh
 - Docker for Mac (or Docker && Docker-Compose) - tested with Docker version 20.10.0, build 7287ab3
+    - docker-compose 1.29.2 (not v2 - disable in your terminal with: `docker-compose disable-v2` - [because docker-compose v1 uses underscores, not dashes,](https://stackoverflow.com/a/69519102/2100636) the scripts depend on)
 
 #### Update Bash
 ```
