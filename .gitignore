@@ -2,12 +2,16 @@
 ######################
 databases.yml
 env.yml
+Dockerfile
 Dockerfile-*
+!Dockerfile-template
+!Dockerfile-template-custom
 port
 database
 nginx.site.custom.conf
 web-server-root
 ecosystem.config.js
+versions/override*
 
 # DockerLocal Generated Files #
 ######################

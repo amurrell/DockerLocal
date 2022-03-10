@@ -20,8 +20,36 @@ NGINX_FILE_COMPUTED="../nginx.site.computed.conf"
 DEFAULT_PROXY_DATABASES_FILE="../../../ProxyLocal/databases.yml"
 DEFAULT_DOCKER_DATABASES_FILE="../databases.yml"
 
-DEFAULT_DOCKERFILE_FILE="Dockerfile"
-CUSTOM_DOCKERFILE_FILE="Dockerfile-custom"
+DEFAULT_DOCKERFILE_FILE="../Dockerfile-template"
+CUSTOM_DOCKERFILE_FILE="../Dockerfile-template-custom"
+DOCKERFILE_COMPUTED="../Dockerfile-computed"
+
+# Versions
+PHP_VERSION=$(<../versions/php-version)
+DB_IMAGE=$(<../versions/db-image)
+UBUNTU_RELEASE_NAME=$(<../versions/ubuntu-release-name)
+UBUNTU_VERSION=$(<../versions/ubuntu-version)
+
+# Version overrides
+if [ -f ../versions/override-php-version ] && [ ! -z $(<../versions/override-php-version) ]; then
+	PHP_VERSION=$(<../versions/override-php-version)
+fi
+
+if [ -f ../versions/override-nginx-version ] && [ ! -z $(<../versions/override-nginx-version) ]; then
+	NGINX_VERSION=$(<../versions/override-nginx-version)
+fi
+
+if [ -f ../versions/override-db-image ] && [ ! -z $(<../versions/override-db-image) ]; then
+	DB_IMAGE=$(<../versions/override-db-image)
+fi
+
+if [ -f ../versions/override-ubuntu-release-name ] && [ ! -z $(<../versions/override-ubuntu-release-name) ]; then
+	UBUNTU_RELEASE_NAME=$(<../versions/override-ubuntu-release-name)
+fi
+
+if [ -f ../versions/override-ubuntu-release-name ] && [ ! -z $(<../versions/override-ubuntu-release-name) ]; then
+	UBUNTU_VERSION=$(<../versions/override-ubuntu-release-name)
+fi
 
 # Process Arguments:
 P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9${10}${11}")
@@ -201,7 +229,7 @@ else
     cp ../docker-compose.yml $FILE
 fi
 
-# DOCKERFILE 
+# DOCKERFILE
 if [ ! -f "../$CUSTOM_DOCKERFILE_FILE" ]; then
     DOCKERFILE_FILE="${DEFAULT_DOCKERFILE_FILE}"
 fi
@@ -260,6 +288,8 @@ fi
 MYSQL_PORT=$((3306 + $WEB_PORT))
 MEMCACHED_PORT=$((11211 + $WEB_PORT))
 REDIS_PORT=$((6379 + $WEB_PORT))
+SSL_PORT=$((433 + $WEB_PORT))
+SOCKET_PORT=$((6001 + $WEB_PORT))
 DOCKER_NAME=$(echo "dockerlocal${WEB_PORT}")
 
 if [ "$CREATE_DB" ]; then
@@ -301,7 +331,7 @@ if [ -f "${ENV_FILE}" ]; then
     rm "${ENV_FILE_CUSTOM}.bak"
 
     ENVS=$(sed -e 's/:[^:\/\/]/="/g;s/$/"/g;s/ *=/=/g' $ENV_FILE_CUSTOM)
-    
+
     # last line keeps getting cut off so just add a placeholder
     placeholder="env[placeholder]=true"
     ENVS=$(printf "${ENVS}\n${placeholder}")
@@ -337,7 +367,7 @@ fi
 
 cp $DEFAULT_NGINX_FILE $NGINX_FILE_COMPUTED
 
-# replace NGINX vars 
+# replace NGINX vars
 sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN}/g;" $NGINX_FILE_COMPUTED
 sed -i'.bak' "s:WEB_SERVER_ROOT:${WEB_SERVER_ROOT}:g;" $NGINX_FILE_COMPUTED
 rm "../nginx.site.computed.conf.bak"
@@ -355,19 +385,42 @@ if [ "$WEB_PORT" == "3000" ]; then
     printf "No port specified, using default 3000. Next instance of DockerLocal will need a port specified: ./site-up -p=3001\n"
 fi
 
+## DOCKERFILE - resolve vars - in the template version
+cp $DOCKERFILE_FILE $DOCKERFILE_COMPUTED
+
+sed -i'.bak' "s/PHP_VERSION/${PHP_VERSION}/g;" $DOCKERFILE_COMPUTED
+sed -i'.bak' "s/UBUNTU_VERSION/${UBUNTU_VERSION}/g;" $DOCKERFILE_COMPUTED
+sed -i'.bak' "s/UBUNTU_RELEASE_NAME/${UBUNTU_RELEASE_NAME}/g;" $DOCKERFILE_COMPUTED
+
+rm "${DOCKERFILE_COMPUTED}.bak"
+
+
+
+if [ -z "$SITE_DOMAIN" ]; then
+    SITE_DOMAIN_OR_WEB_HOST="${WEB_PORT}"
+else
+    SITE_DOMAIN_OR_WEB_HOST="${SITE_DOMAIN}"
+fi
+
+## DOCKER-COMPOSE - resolve variables
+
 sed -i'.bak' "s/WEB_PORT/${WEB_PORT}/g;" $FILE
-sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN}/g;" $FILE
+sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN_OR_WEB_HOST}/g;" $FILE
 sed -i'.bak' "s/MYSQL_PORT/${MYSQL_PORT}/g;" $FILE
 sed -i'.bak' "s/MEMCACHED_PORT/${MEMCACHED_PORT}/g;" $FILE
 sed -i'.bak' "s/REDIS_PORT/${REDIS_PORT}/g;" $FILE
-sed -i'.bak' "s/DOCKERFILE/${DOCKERFILE_FILE}/g;" $FILE
+sed -i'.bak' "s/DOCKERFILE/Dockerfile-computed/g;" $FILE
 
 sed -i'.bak' "s/DATABASE_NAME/${DB_NAME}/g;" $FILE
 sed -i'.bak' "s/DATABASE_HOST/${DOCKER_NAME}_mysql_1/g;" $FILE
 sed -i'.bak' "s/DATABASE_PORT/${MYSQL_PORT}/g;" $FILE
 
-rm "${FILE}.bak"
+sed -i'.bak' "s/SSL_PORT/${SSL_PORT}/g;" $FILE
+sed -i'.bak' "s/SOCKET_PORT/${SOCKET_PORT}/g;" $FILE
 
+sed -i'.bak' "s/DB_IMAGE/${DB_IMAGE}/g;" $FILE
+
+rm "${FILE}.bak"
 
 ## SHUT DOWN
 if [ "$SITE_DOWN" ]; then

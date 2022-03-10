@@ -13,13 +13,15 @@ services:
             - memcached
         expose:
             - "80"
+        environment:
+            - REDIS_URL=redis://cache
         networks:
             - dlocal-net
         depends_on:
             - mysql
             - memcached
     mysql:
-        image: mysql
+        image: DB_IMAGE
         command: mysqld --default-authentication-plugin=mysql_native_password
         restart: always
         ports:
@@ -33,15 +35,22 @@ services:
         networks:
             - dlocal-net
     memcached:
-      image: memcached
-      restart: always
-      ports:
-        - "MEMCACHED_PORT:11211"
-      networks:
+        image: memcached
+        restart: always
+        ports:
+            - "MEMCACHED_PORT:11211"
+        networks:
+            - dlocal-net
+    redis:
+        image: redis
+        restart: always
+        ports:
+            - "REDIS_PORT:6379"
+        networks:
             - dlocal-net
 volumes:
     mysql-data-WEB_PORT:
-        
+
 networks:
-  dlocal-net:
-    driver: bridge
+    dlocal-net:
+        driver: bridge

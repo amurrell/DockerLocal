@@ -2,9 +2,19 @@
 
 **DockerLocal** is used for setting up a LEMP site to be served on localhost:PORT
 
-**DockerLocal** runs on docker containers - nginx + php7.3-fpm, memcached, redis, mysql and your project's web application files. Provides customization for configuring the Dockerfile, nginx, php-fpm, and managing databases.
+**DockerLocal** runs on docker containers - nginx + php-fpm, memcached, redis, mysql/mariadb and your project's web application files. Provides customization for configuring the Dockerfile, nginx, php-fpm, and managing databases.
 
 > **Note:** Your DockerLocal containers can also be used with [ProxyLocal](https://github.com/amurrell/ProxyLocal) for a local DNS of all your DockerLocal projects so that you can run your sites locally at custom domains, like docker.yoursite.com and docker.anothersite.com
+
+---
+
+**Easy Version Setting**
+
+You can easily [adjust via overrides the versions](#version-overrides) of the following:
+
+- Ubuntu Version (default 20.04)
+- PHP Version (default 7.4)
+- Database Image Mysql or Mariadb (default mariadb:10.5.8)
 
 ---
 
@@ -27,6 +37,7 @@
     - [SSH into containers](#ssh-into-the-containers)
     - [Share your site](#share-your-site)
 - [Configuration Files](#configuration-files)
+    - [version overrides](#version-overrides)
     - [port](#dockerlocalport)
     - [web-server-root](#dockerlocalweb-server-root)
     - [nginx.site.custom.conf](#dockerlocalnginxsitecustomconf)
@@ -86,7 +97,7 @@ git clone git@github.com:amurrell/DockerLocal.git
 
 ## Simple Install Examples
 
-Control DockerLocal with shell commands. All the following examples rely upon: 
+Control DockerLocal with shell commands. All the following examples rely upon:
 
 1. Going to the commands folder. `cd DockerLocal/commands`
 2. Understanding that shell scripts are triggered with a `./` preceeding the command, eg. `./site-up`
@@ -184,7 +195,7 @@ The first time you run that, it will create your configuration file. After that,
 
 ### Checking Logs
 
-If you want to check your log files, you can find them in `DockerLocal/logs`. 
+If you want to check your log files, you can find them in `DockerLocal/logs`.
 
 Your queue logs, access.log, php_error_log.log and error.log are all in that folder.
 
@@ -203,7 +214,7 @@ Ex: In your terminal, in `DockerLocal/commands`:
 ./site-logs -p  # Only php_error_log is tailed
 ./site-logs -e  # Only error_log is tailed
 ./site-logs -a  # Only access.log is tailed
-./site-logs -h  # Help to find what the switches are 
+./site-logs -h  # Help to find what the switches are
 ```
 
 
@@ -236,14 +247,14 @@ Ex: In your terminal, in `DockerLocal/commands`:
 #### Export local database
 
 1. If you don't know then name of your current database:
-    - `cat DockerLocal/database` 
+    - `cat DockerLocal/database`
 
 1. If you want to see all databases you have locally:
     - `cd DockerLocal/commands` && `./site-ssh -h=mysql` && `show databases;`
 
 1. If you know the name of your local db then:
     - `cd DockerLocal/commands`
-    - `./site-db -d=your_db` 
+    - `./site-db -d=your_db`
 
     This generates a file `DockerLocal/data/dumps/your_db.sql.dump` which you may want to rename so you wont write over this from subsequent dumps.
 
@@ -292,6 +303,41 @@ Requires Ngrok
 ----
 
 ## Configuration Files
+
+### Version Overrides
+
+You can use the defaults or choose a different version for:
+- **ubuntu** & **php** versions in the `Dockerfile-template`
+- **mysql or mariadb** version in `docker-compose-custom.yml` for the mysql image
+
+You can see the default configs in `DockerLocal/version` in the form of files:
+
+```
+DockerLocal
+- versions
+    - php-version
+      > 7.4
+    - ubuntu-release-name
+      > focal
+    - ubuntu-version
+      > 20.04
+    - db-image
+      > mariadb:10.5.8
+```
+
+If you `cat versions/php-version` you'll see the contents are just the version:
+
+```
+7.4
+```
+
+You can overide any of these by copying the file and renaming to prepend override. Eg.
+
+```
+echo "7.3" > versions/override-php-version
+```
+
+---
 
 ### DockerLocal/port
 
@@ -342,18 +388,18 @@ To confirm that your path is loaded correctly, you can check your [`DockerLocal\
 
 Use this file to override the nginx.site.conf. You can start by copying the nginx.site.conf file and then making your edits.
 
-The nginx.site.computed.conf file is basically the same as your custom, but with variables computed. 
+The nginx.site.computed.conf file is basically the same as your custom, but with variables computed.
 
 The following variables are available to use in your nginx.site.custom.conf file:
 
-- **SITE_DOMAIN** - this is only going to work if you have ProxyLocal running
+- **SITE_DOMAIN** - this will use SITE_DOMAIN for those running proxylocal, or smartly use WEB_PORT if not
 - **WEB_SERVER_ROOT** - this is your web servers root path. See [DockerLocal/web-server-root](#dockerlocalweb-server-root)
 
 ---
 
 ### DockerLocal/database
 
-After running the `-c=DB_NAME` command, you will have a file in `DockerLocal/database` with the `DB_NAME` in it. 
+After running the `-c=DB_NAME` command, you will have a file in `DockerLocal/database` with the `DB_NAME` in it.
 
 You can change this out by editing the file. To create new databases, you will still use the `-c` switch (1 time).
 
@@ -421,27 +467,33 @@ env[DL_DB_LOCAL_PORT]="6307"
 ### DockerLocal/php7-fpm.site.conf
 
 This is a template file, for the outputted `php7-fpm.site.custom.conf`.
-Ensure you keep `;ENV` in your template for env vars to populate there. The rest is yours to modify! 
+Ensure you keep `;ENV` in your template for env vars to populate there. The rest is yours to modify!
 
-> **NOTE:** If you modify this file, it will look like unstaged file changes. 
+> **NOTE:** If you modify this file, it will look like unstaged file changes.
 
 > **TODO:** change php7-fpm.site.custom.conf to be a computed file, and allow for edits to get stored in the custom file.)
 
 ---
 
-### DockerLocal/Dockerfile
+### DockerLocal/Dockerfile-template
 
-The "Web" container is defined by this DockerFile.
+The "Web" container is defined by this `Dockerfile-template`.
 
-If you need to install any other php libraries or what not, feel free to create a copy, edit and save as `Dockerfile-custom`, which will get used over Dockerfile.
+- it contains variables to [help with versioning](#version-overrides): `UBUNTU_VERSION` and `PHP_VERSION`
+- it relies on the `./site-up` script to compute the variables to create an untracked file: `Dockerfile-computed`
+    - this is what gets used by docker-compose.
+
+**Customize**
+
+If you need to install any other php libraries or modify this template beyond the version overrides, feel free to create a copy, edit and save as `Dockerfile-template-custom`, which will get used over `Dockerfile-template`.
 
 ---
 
 ### DockerLocal/ecosystem.config.js
 
-This file is a special configuration file for using with pm2, a process manager. PM2 is useful for projects that have workers, like laravel worker queues. 
+This file is a special configuration file for using with pm2, a process manager. PM2 is useful for projects that have workers, like laravel worker queues.
 
-You can take advantage of the `DockerLocal\nvm-pm2` shell command that will install nvm and pm2 for you. 
+You can take advantage of the `DockerLocal\nvm-pm2` shell command that will install nvm and pm2 for you.
 
 Here's how:
 
