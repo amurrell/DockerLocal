@@ -5,7 +5,8 @@ env.yml
 Dockerfile
 Dockerfile-*
 !Dockerfile-template
-!Dockerfile-template-custom
+Dockerfile-template-custom
+!Dockerfile-template-no-mssql-example
 port
 database
 nginx.site.custom.conf
