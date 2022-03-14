@@ -57,6 +57,16 @@ You can easily [adjust via overrides the versions](#version-overrides) of the fo
 - Docker for Mac (or Docker && Docker-Compose) - tested with Docker version 20.10.0, build 7287ab3
     - docker-compose 1.29.2 (not v2 - disable in your terminal with: `docker-compose disable-v2` - [because docker-compose v1 uses underscores, not dashes,](https://stackoverflow.com/a/69519102/2100636) the scripts depend on)
 
+#### M1 chips
+
+If you are using an m1 chip, the mssql and sqlsrv packages are not compatible yet - so it is recommended to use the `Dockerfile-template-no-mssql-example`
+
+```
+cp Dockerfile-template-no-mssql-example Dockerfile-template-custom
+```
+
+Note: You can make any changes you want to the [Dockerfile-template-custom](#dockerlocaldockerfile-template) - to install different packages, etc.
+
 #### Update Bash
 ```
 /bin/bash --version
@@ -313,7 +323,7 @@ You can use the defaults or choose a different version for:
 - **mysql or mariadb** version in `docker-compose-custom.yml` for the mysql image. Variable (used in the file) is:
     - DB_IMAGE
 
-You can see the default configs in `DockerLocal/version` in the form of files:
+You can see the default configs in `DockerLocal/versions` in the form of files:
 
 ```
 DockerLocal
