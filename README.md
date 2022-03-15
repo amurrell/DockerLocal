@@ -42,13 +42,15 @@ You can easily [adjust via overrides the versions](#version-overrides) of the fo
     - [web-server-root](#dockerlocalweb-server-root)
     - [nginx.site.custom.conf](#dockerlocalnginxsitecustomconf)
     - [database](#dockerlocaldatabase)
-    - [database.yml](#dockerlocaldatabaseyml)
-    - [Dockerfile-custom](#dockerlocaldockerfile)
+    - [databases.yml](#dockerlocaldatabasesyml)
+    - [Dockerfile-template](#dockerlocaldockerfile-template)
+        - [Dockerfile-template-custom](#customize)
     - [env-example.yml, env.yml](#dockerlocalenv-exampleyml-envyml)
     - [php7-fpm.site.conf](#dockerlocalphp7-fpmsiteconf)
     - [ecosystem.config.js](#dockerlocalecosystemconfigjs)
 - [Install NVM-PM2](#install-nvm-pm2)
 - [Install ProxyLocal](#install-proxylocal)
+
 ---
 
 ## Requirements
@@ -73,6 +75,8 @@ Note: You can make any changes you want to the [Dockerfile-template-custom](#doc
 brew install bash
 /usr/local/bin/bash --version
 ```
+
+[↑](#contents)
 
 ---
 
@@ -103,6 +107,8 @@ git clone git@github.com:amurrell/DockerLocal.git
 
 > **Note:** You can also use DockerLocal as a git submodule
 
+[↑](#contents)
+
 ---
 
 ## Simple Install Examples
@@ -121,6 +127,8 @@ Examples:
 - [Ex: With Remote-fetched Database](#ex--remote-fetched-database)
 - [Ex: With different root path](#ex--with-different-root-path)
 
+[↑](#contents)
+
 ---
 
 ### Ex: Basic
@@ -128,6 +136,8 @@ Examples:
 This will install your site at [localhost:3000](http://localhost:3000) with no custom configuration (no database, default port, default webserver's root path eg. html/index.php or html/index.html).
 
 - Run `./site-up`
+
+[↑](#contents)
 
 ---
 
@@ -147,6 +157,8 @@ Now it's running on your custom port 3001!
 
 Go to [localhost:3001](http://localhost:3001)
 
+[↑](#contents)
+
 ---
 
 ### Ex: With New Empty Database
@@ -162,6 +174,8 @@ You can safely shutdown and start up again and it remembers you're using that db
 - `./site-down` to shut it down
 - `./site-up` to start up again
 
+[↑](#contents)
+
 ---
 
 ### With Remote-fetched Database
@@ -175,6 +189,8 @@ Copy the `DockerLocal/databases-example.yml` to [`DockerLocal\databases.yml`](#d
 ./site-up
 ```
 
+[↑](#contents)
+
 ---
 
 ### With Different Root Path
@@ -186,6 +202,8 @@ You can create this file initially with:
 `./site-up -w=/var/www/site/app/public`
 
 The first time you run that, it will create your configuration file. After that, it will only override that file if you pass -w again. To permanently change it, do so in the configuration file.
+
+[↑](#contents)
 
 ----
 
@@ -200,6 +218,8 @@ The first time you run that, it will create your configuration file. After that,
 
 - `cd ~/vhosts/ProxyLocal/commands`
 - `./proxy-down`
+
+[↑](#contents)
 
 ---
 
@@ -227,6 +247,8 @@ Ex: In your terminal, in `DockerLocal/commands`:
 ./site-logs -h  # Help to find what the switches are
 ```
 
+
+[↑](#contents)
 
 ---
 
@@ -283,6 +305,8 @@ Ex: In your terminal, in `DockerLocal/commands`:
 - `cd DockerLocal/commands`
 - `./site-db -i=name_of_local_db -f=import-partial.sql`
 
+[↑](#contents)
+
 ---
 
 ### SSH into the containers
@@ -294,6 +318,8 @@ Ex: In your terminal, in `DockerLocal/commands`:
 - `./site-ssh -h=memcached` .. there's really no reason to be here.
 
 - `./site-ssh -h=web -c='cat /etc/passwd' where -c is a command to pass into the web container. Notice the difference between using single quotes. ie `-c="$(whoami)"` and `-c='$(whoami)'`.
+
+[↑](#contents)
 
 ---
 
@@ -309,6 +335,8 @@ Requires Ngrok
 - [Download ngrok](https://ngrok.com/download)
 - Unzip it to your **Applications** directory
 - `ln -s /Applications/ngrok /usr/local/bin/ngrok`
+
+[↑](#contents)
 
 ----
 
@@ -350,6 +378,8 @@ You can overide any of these by copying the file and renaming to prepend overrid
 echo "7.3" > versions/override-php-version
 ```
 
+[↑](#contents)
+
 ---
 
 ### DockerLocal/port
@@ -371,6 +401,8 @@ So, your commands would be so simple:
 ./site-ssh -h=web
 ./site-down
 ```
+
+[↑](#contents)
 
 ---
 
@@ -395,6 +427,8 @@ The first time you run that, it will create your configuration file. After that,
 
 To confirm that your path is loaded correctly, you can check your [`DockerLocal\nginx.site.computed.conf`](#dockerlocalnginxsitecomputedconf) file that is generated from running `./site-up`. You should see the `root YOURPATH` line in your nginx server block.
 
+[↑](#contents)
+
 ---
 
 ### DockerLocal/nginx.site.custom.conf
@@ -407,6 +441,8 @@ The following variables are available to use in your nginx.site.custom.conf file
 
 - **SITE_DOMAIN** - this will use SITE_DOMAIN for those running proxylocal, or smartly use WEB_PORT if not
 - **WEB_SERVER_ROOT** - this is your web servers root path. See [DockerLocal/web-server-root](#dockerlocalweb-server-root)
+
+[↑](#contents)
 
 ---
 
@@ -421,6 +457,8 @@ You can use -l switch to specify a different local database than the one saved i
 To confirm your `database` file is being read correctly, you can check the `DockerLocal/env-custom.yml` file for your DB_NAME.
 
 To confirm your `database` exists, you can ssh into the mysql container: `./site-ssh -h=mysql` and `show databases;`
+
+[↑](#contents)
 
 ---
 
@@ -439,6 +477,8 @@ databases:
     port: 3306
     3001: example_com
 ```
+
+[↑](#contents)
 
 ---
 
@@ -475,6 +515,8 @@ env[DL_DB_PORT]="3306"
 env[DL_DB_LOCAL_PORT]="6307"
 ```
 
+[↑](#contents)
+
 ---
 
 ### DockerLocal/php7-fpm.site.conf
@@ -486,6 +528,8 @@ Ensure you keep `;ENV` in your template for env vars to populate there. The rest
 
 > **TODO:** change php7-fpm.site.custom.conf to be a computed file, and allow for edits to get stored in the custom file.)
 
+[↑](#contents)
+
 ---
 
 ### DockerLocal/Dockerfile-template
@@ -496,9 +540,11 @@ The "Web" container is defined by this `Dockerfile-template`.
 - it relies on the `./site-up` script to compute the variables to create an untracked file: `Dockerfile-computed`
     - this is what gets used by docker-compose.
 
-**Customize**
+#### Customize
 
 If you need to install any other php libraries or modify this template beyond the version overrides, feel free to create a copy, edit and save as `Dockerfile-template-custom`, which will get used over `Dockerfile-template`.
+
+[↑](#contents)
 
 ---
 
@@ -524,11 +570,15 @@ pm2 start
 
 > **Note**: You have to run this stuff above every time you power up your containers. You will also want to re-run pm2 (eg pm2 restart) when you've made changes to your code that would affect these queues.
 
+[↑](#contents)
+
 ---
 
 ## Install nvm-pm2
 
 You can use pm2 with this project, but it's a bit more manual. Look at the documentation for the configuration file [DockerLocal/ecosystem.config.js](#dockerlocalecosystemconfigjs) for more information.
+
+[↑](#contents)
 
 ---
 
