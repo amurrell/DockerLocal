@@ -230,11 +230,11 @@ else
 fi
 
 # DOCKERFILE
-if [ ! -f "../$CUSTOM_DOCKERFILE_FILE" ]; then
+if [ ! -f "$CUSTOM_DOCKERFILE_FILE" ]; then
     DOCKERFILE_FILE="${DEFAULT_DOCKERFILE_FILE}"
 fi
 
-if [ -f "../$CUSTOM_DOCKERFILE_FILE" ]; then
+if [ -f "$CUSTOM_DOCKERFILE_FILE" ]; then
     DOCKERFILE_FILE="${CUSTOM_DOCKERFILE_FILE}"
 fi
 
