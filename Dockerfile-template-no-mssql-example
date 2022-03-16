@@ -62,10 +62,6 @@ RUN pecl uninstall -r redis
 RUN pecl -d php_suffix=PHP_VERSION install yaml-2.2.1
 RUN pecl uninstall -r yaml-2.2.1
 
-# copy 30-pdo_sqlsrv.ini to some locations for loading
-RUN cp /etc/php/PHP_VERSION/cli/conf.d/20-sqlsrv.ini /etc/php/PHP_VERSION/fpm/conf.d
-RUN cp /etc/php/PHP_VERSION/cli/conf.d/30-pdo_sqlsrv.ini /etc/php/PHP_VERSION/fpm/conf.d
-
 # export var for nano to work in command line
 ENV TERM xterm
 
