@@ -21,6 +21,13 @@ php7-fpm.site.custom.conf
 nginx.site.computed.conf
 env-custom.yml
 *.bak
+site-*
+!site-up
+!site-down
+!site-ssh
+!site-db
+!site-logs
+!site-ngrok
 
 # OS generated files #
 ######################

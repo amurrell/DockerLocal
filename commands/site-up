@@ -187,12 +187,23 @@ if [ "$WEB_PORT" == '' ]; then
 fi
 
 # Determine site domain from sites.yml
-SITE_DOMAIN=$(eval cat $PROXYLOCAL_SITES | awk "/${WEB_PORT}:/"' { print $2 }')
-# Check if proxylocal is running...
-PROXYLOCAL_NETWORK=$(eval sudo docker network ls | grep "proxylocal_docker-proxy-net")
-PROXYLOCAL_CONTAINER=$(eval sudo docker ps | grep "proxylocal_proxy_1")
+# if it doesn't exist where we expect it, do not try to use proxylocal!
+if [ "${PROXYLOCAL_SITES}" == "" ]; then
+    SITE_DOMAIN_OR_WEB_HOST="${WEB_PORT}"
+    SITE_DOMAIN_OR_DOCKER_NAME="0.0.0.0"
+    #SITE_DOMAIN_OR_DOCKER_NAME="$(echo "dockerlocal${WEB_PORT}")_web_1"
+    SITE_DOMAIN=""
+    PROXYLOCAL_NETWORK=""
+    PROXYLOCAL_CONTAINER=""
+else
+    SITE_DOMAIN=$(eval cat $PROXYLOCAL_SITES | awk "/${WEB_PORT}:/"' { print $2 }')
+    SITE_DOMAIN_OR_WEB_HOST="${SITE_DOMAIN}"
+    # Check if proxylocal is running...
+    PROXYLOCAL_NETWORK=$(eval sudo docker network ls | grep "proxylocal_docker-proxy-net")
+    PROXYLOCAL_CONTAINER=$(eval sudo docker ps | grep "proxylocal_proxy_1")
+fi
 
-if [ "$PROXYLOCAL_CONTAINER" == '' ]; then
+if [ ! "${PROXYLOCAL_SITES}" == "" ] && [ "$PROXYLOCAL_CONTAINER" == '' ]; then
     printf "The proxylocal network is up, but the container is down. So, restarting proxylocal...\n"
     PROXYLOCAL_NETWORK=''
 fi
@@ -205,8 +216,10 @@ if [ "${PROXYLOCAL_NETWORK}" == '' ] && [ -f "${PROXYLOCAL_SITES}" ] && [ ! "$SI
     cd $RETURNPWD
 fi
 
-# Try again
-PROXYLOCAL_NETWORK=$(eval sudo docker network ls | grep "proxylocal_docker-proxy-net")
+# Try again, only if a sites.yml was found before
+if [ ! "${PROXYLOCAL_SITES}" == "" ]; then
+    PROXYLOCAL_NETWORK=$(eval sudo docker network ls | grep "proxylocal_docker-proxy-net")
+fi
 
 # Handle the nginx up part after the machine is up, because otherwise the upstream host will not exist yet.
 
@@ -368,8 +381,9 @@ fi
 cp $DEFAULT_NGINX_FILE $NGINX_FILE_COMPUTED
 
 # replace NGINX vars
-sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN}/g;" $NGINX_FILE_COMPUTED
+sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN_OR_DOCKER_NAME}/g;" $NGINX_FILE_COMPUTED
 sed -i'.bak' "s:WEB_SERVER_ROOT:${WEB_SERVER_ROOT}:g;" $NGINX_FILE_COMPUTED
+sed -i'.bak' "s/SOCKET_PORT/${SOCKET_PORT}/g;" $NGINX_FILE_COMPUTED
 rm "../nginx.site.computed.conf.bak"
 
 # Final checks for behavior
@@ -394,13 +408,6 @@ sed -i'.bak' "s/UBUNTU_RELEASE_NAME/${UBUNTU_RELEASE_NAME}/g;" $DOCKERFILE_COMPU
 
 rm "${DOCKERFILE_COMPUTED}.bak"
 
-
-
-if [ -z "$SITE_DOMAIN" ]; then
-    SITE_DOMAIN_OR_WEB_HOST="${WEB_PORT}"
-else
-    SITE_DOMAIN_OR_WEB_HOST="${SITE_DOMAIN}"
-fi
 
 ## DOCKER-COMPOSE - resolve variables
 
