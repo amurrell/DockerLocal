@@ -189,15 +189,15 @@ fi
 # Determine site domain from sites.yml
 # if it doesn't exist where we expect it, do not try to use proxylocal!
 if [ "${PROXYLOCAL_SITES}" == "" ]; then
-    SITE_DOMAIN_OR_WEB_HOST="${WEB_PORT}"
-    SITE_DOMAIN_OR_DOCKER_NAME="0.0.0.0"
-    #SITE_DOMAIN_OR_DOCKER_NAME="$(echo "dockerlocal${WEB_PORT}")_web_1"
+    SITE_DOMAIN_OR_WEB_PORT="${WEB_PORT}"
+    SITE_DOMAIN_OR_DOCKER_HOST="0.0.0.0"
     SITE_DOMAIN=""
     PROXYLOCAL_NETWORK=""
     PROXYLOCAL_CONTAINER=""
 else
     SITE_DOMAIN=$(eval cat $PROXYLOCAL_SITES | awk "/${WEB_PORT}:/"' { print $2 }')
-    SITE_DOMAIN_OR_WEB_HOST="${SITE_DOMAIN}"
+    SITE_DOMAIN_OR_WEB_PORT="${SITE_DOMAIN}"
+    SITE_DOMAIN_OR_DOCKER_HOST="${SITE_DOMAIN}"
     # Check if proxylocal is running...
     PROXYLOCAL_NETWORK=$(eval sudo docker network ls | grep "proxylocal_docker-proxy-net")
     PROXYLOCAL_CONTAINER=$(eval sudo docker ps | grep "proxylocal_proxy_1")
@@ -381,7 +381,7 @@ fi
 cp $DEFAULT_NGINX_FILE $NGINX_FILE_COMPUTED
 
 # replace NGINX vars
-sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN_OR_DOCKER_NAME}/g;" $NGINX_FILE_COMPUTED
+sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN_OR_DOCKER_HOST}/g;" $NGINX_FILE_COMPUTED
 sed -i'.bak' "s:WEB_SERVER_ROOT:${WEB_SERVER_ROOT}:g;" $NGINX_FILE_COMPUTED
 sed -i'.bak' "s/SOCKET_PORT/${SOCKET_PORT}/g;" $NGINX_FILE_COMPUTED
 rm "../nginx.site.computed.conf.bak"
@@ -412,7 +412,7 @@ rm "${DOCKERFILE_COMPUTED}.bak"
 ## DOCKER-COMPOSE - resolve variables
 
 sed -i'.bak' "s/WEB_PORT/${WEB_PORT}/g;" $FILE
-sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN_OR_WEB_HOST}/g;" $FILE
+sed -i'.bak' "s/SITE_DOMAIN/${SITE_DOMAIN_OR_WEB_PORT}/g;" $FILE
 sed -i'.bak' "s/MYSQL_PORT/${MYSQL_PORT}/g;" $FILE
 sed -i'.bak' "s/MEMCACHED_PORT/${MEMCACHED_PORT}/g;" $FILE
 sed -i'.bak' "s/REDIS_PORT/${REDIS_PORT}/g;" $FILE
