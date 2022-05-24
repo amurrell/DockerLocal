@@ -21,7 +21,7 @@ You can easily [adjust via overrides the versions](#version-overrides) of the fo
 ## Contents
 
 - [Requirements](#requirements)
-    - [Update Bash](#update-bash)
+    - [Using MsSQL](#using-mssqlsqlsvr)
 - [Install](#install)
     - [Clone - Where to put DockerLocal](#cloning-dockerlocal-into-your-project)
     - [Simple Installation Examples](#simple-install-examples)
@@ -55,26 +55,21 @@ You can easily [adjust via overrides the versions](#version-overrides) of the fo
 
 ## Requirements
 
-- Bash 4+ (MacOS default 3.2.57, needs brew install), or Zsh
+- Bash 4+ on linux; MacOS default 3.2.57 is okay - recommend using [zsh](https://github.com/ohmyzsh/ohmyzsh) - install via curl
 - Docker for Mac (or Docker && Docker-Compose) - tested with Docker version 20.10.0, build 7287ab3
     - docker-compose 1.29.2 (not v2 - disable in your terminal with: `docker-compose disable-v2` - [because docker-compose v1 uses underscores, not dashes,](https://stackoverflow.com/a/69519102/2100636) the scripts depend on)
 
-#### M1 chips
+#### Using MsSQL/SQLsvr?
 
-If you are using an m1 chip, the mssql and sqlsrv packages are not compatible yet - so it is recommended to use the `Dockerfile-template-no-mssql-example`
+DockerLocal does not support mssql/sqlsvr by default anymore - because it's not compatible with macs using m1 chips (docker does not support). 
+
+To enable MsSQL, use a custom Dockerfile. We have created a template you can copy with necessary packages: 
 
 ```
-cp Dockerfile-template-no-mssql-example Dockerfile-template-custom
+cp Dockerfile-template-use-mssql-example Dockerfile-template-custom
 ```
 
-Note: You can make any changes you want to the [Dockerfile-template-custom](#dockerlocaldockerfile-template) - to install different packages, etc.
-
-#### Update Bash
-```
-/bin/bash --version
-brew install bash
-/usr/local/bin/bash --version
-```
+**Note:** You can make any changes you want to the [Dockerfile-template-custom](#dockerlocaldockerfile-template) - to install different packages, etc.
 
 [↑](#contents)
 
@@ -576,7 +571,27 @@ pm2 start
 
 ## Install nvm-pm2
 
-You can use pm2 with this project, but it's a bit more manual. Look at the documentation for the configuration file [DockerLocal/ecosystem.config.js](#dockerlocalecosystemconfigjs) for more information.
+You can use pm2 with this project, but it's a bit more manual. 
+
+Look at the documentation for the configuration file [DockerLocal/ecosystem.config.js](#dockerlocalecosystemconfigjs) for more information on how it install nvm-pm2 and setup config.
+
+---
+
+If you were tangentally looking how to install nvm on your local machine (not in the container), and do not want to use brew, here's how:
+
+```
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.6/install.sh | bash
+. ~/.nvm/nvm.sh
+. ~/.profile
+. ~/.bashrc
+. ~/.zshrc
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+command -v nvm
+```
 
 [↑](#contents)
 

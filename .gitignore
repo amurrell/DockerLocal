@@ -6,7 +6,7 @@ Dockerfile
 Dockerfile-*
 !Dockerfile-template
 Dockerfile-template-custom
-!Dockerfile-template-no-mssql-example
+!Dockerfile-template-use-mssql-example
 port
 database
 nginx.site.custom.conf
