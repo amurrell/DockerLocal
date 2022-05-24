@@ -10,11 +10,15 @@
 
 **Easy Version Setting**
 
-You can easily [adjust via overrides the versions](#version-overrides) of the following:
+The master branch has the latest versions (see defaults below) - but they are [configurable in the `/versions/` folder](#version-overrides).
+
+You can configure the following:
 
 - Ubuntu Version (default 20.04)
 - PHP Version (default 7.4)
-- Database Image Mysql or Mariadb (default mariadb:10.5.8)
+- Database Image Mysql or Mariadb (default mariadb:10.6)
+
+**Note** For convenience, you could also checkout a specific branch eg. PHP-8.0 and use those defaults (or adjust using same technique ^).
 
 ---
 
