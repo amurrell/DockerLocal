@@ -13,6 +13,8 @@ nginx.site.custom.conf
 web-server-root
 ecosystem.config.js
 versions/override*
+data/custom/*.cnf
+!data/custom/options.cnf
 
 # DockerLocal Generated Files #
 ######################

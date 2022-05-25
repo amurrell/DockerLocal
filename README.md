@@ -18,7 +18,7 @@ You can configure the following:
 - PHP Version (default 7.4)
 - Database Image Mysql or Mariadb (default mariadb:10.6)
 
-**Note** For convenience, you could also checkout a specific branch eg. PHP-8.0 and use those defaults (or adjust using same technique ^).
+**Note**: For convenience, you could also checkout a specific branch eg. PHP-8.0 and use those defaults (or adjust using same technique ^).
 
 ---
 
@@ -52,6 +52,7 @@ You can configure the following:
     - [env-example.yml, env.yml](#dockerlocalenv-exampleyml-envyml)
     - [php7-fpm.site.conf](#dockerlocalphp7-fpmsiteconf)
     - [ecosystem.config.js](#dockerlocalecosystemconfigjs)
+- [Add Database cnf files](#database-cnf-files)
 - [Install NVM-PM2](#install-nvm-pm2)
 - [Install ProxyLocal](#install-proxylocal)
 
@@ -595,6 +596,25 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 command -v nvm
+```
+
+[↑](#contents)
+
+---
+
+## Database cnf files
+
+If you need to adjust settings eg. `my.cnf` for the database (mysql|mariadb) image, you can add `*.cnf` config files to `DockerLocal/data/custom/`.
+
+**Note:** `options.cnf` is already in version control, but you can create any other files there and have them ignored - eg. my.cnf
+
+How does it work? In the `docker-compose`, there's a shared volume which connects these files to the container's `/etc/mysql/conf.d`:
+
+```
+volumes:
+...
+- ./data/custom:/etc/mysql/conf.d
+...
 ```
 
 [↑](#contents)
