@@ -42,6 +42,7 @@ You can configure the following:
     - [Share your site](#share-your-site)
 - [Configuration Files](#configuration-files)
     - [version overrides](#version-overrides)
+        - [changing db_image type of an existing db](#changing-existing-db-image-version)
     - [port](#dockerlocalport)
     - [web-server-root](#dockerlocalweb-server-root)
     - [nginx.site.custom.conf](#dockerlocalnginxsitecustomconf)
@@ -377,6 +378,37 @@ You can overide any of these by copying the file and renaming to prepend overrid
 ```
 echo "7.3" > versions/override-php-version
 ```
+
+#### Changing existing DB image version
+
+If you have an **existing database with data in it** using one image (eg. mysql) and you plan to switch to another (eg. mariadb), then you will need to backup your database, remove the docker volume, re-import your data. 
+
+**Note:** This is not an issue if you are changing the version of the same db image type (eg. mariadb:10.5.8 -> mariadb:10.6).
+
+Here are the steps:
+
+1. Get a backup SQL dump of your current setup
+
+    - `./site-db -d=your_db_name`
+    - `cd DockerLocal/data/dumps`
+    - `mv` `your_db_name.sql.dump` or whatever it's called to `before_db_image_upgrade.sql`
+
+2. Turn off the docker containers if running - `./site-down`.
+
+3. Remove the data volume - make sure you have a backup!
+
+    ```
+    [sudo] docker volume ls
+    see which one it is... eg. dockerlocal{PORT}_mysql-data-{PORT}
+    [sudo] docker volume rm <name-of-volume>
+    ```
+
+3. Make the version change - eg. `echo "mariadb:10.6" > versions/override-db-image`
+
+4. Turn back on `./site-up` - then create a db again `./site-up -c=your_db_name`
+
+5. Import: `./site-db -i=your_db_name -f=before_db_image_upgrade.sql`
+
 
 [↑](#contents)
 
