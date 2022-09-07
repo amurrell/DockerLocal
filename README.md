@@ -15,10 +15,10 @@ The master branch has the latest versions (see defaults below) - but they are [c
 You can configure the following:
 
 - Ubuntu Version (default 20.04)
-- PHP Version (default 7.4)
+- PHP Version (default 8.0)
 - Database Image Mysql or Mariadb (default mariadb:10.6)
 
-**Note**: For convenience, you could also checkout a specific branch eg. PHP-8.0 and use those defaults (or adjust using same technique ^).
+**Note**: For convenience, you could also checkout a specific branch eg. PHP-7.4 and use those defaults (or adjust using same technique ^).
 
 ---
 
