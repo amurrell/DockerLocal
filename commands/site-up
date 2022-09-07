@@ -201,6 +201,35 @@ else
     # Check if proxylocal is running...
     PROXYLOCAL_NETWORK=$(eval sudo docker network ls | grep "proxylocal_docker-proxy-net")
     PROXYLOCAL_CONTAINER=$(eval sudo docker ps | grep "proxylocal_proxy_1")
+
+    # if proxylocal, then we have a site name. lets make a ssl cert for it, if it doesnt exist
+    if [ ! -f "../docker-${SITE_DOMAIN}-cert.pem" ]; then
+        
+        # Now create ssl certs for each site
+        openssl req -x509 -keyout key.pem -out cert.pem -sha256 \
+            -days 365 -nodes \
+            -newkey rsa:2048 \
+            -subj "/CN=${SITE_DOMAIN}" \
+            -extensions EXT \
+            -config <(\
+            printf "[dn]\nCN=${SITE_DOMAIN}\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:${SITE_DOMAIN}\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth") \
+            2>/dev/null
+
+      # check exit code
+      if [ $? -ne 0 ]; then
+        echo "❌ Error generating ssl certs for ${SITE_DOMAIN} - continuing anyway..."
+      fi
+
+      # If key file exists, change the name of it.
+      if [ -f key.pem ]; then
+        mv key.pem "../ssl-${SITE_DOMAIN}-key.pem"
+      fi
+
+      # if cert file exists, change the name of it.
+      if [ -f cert.pem ]; then
+        mv cert.pem "../ssl-${SITE_DOMAIN}-cert.pem"
+      fi
+    fi
 fi
 
 if [ ! "${PROXYLOCAL_SITES}" == "" ] && [ "$PROXYLOCAL_CONTAINER" == '' ]; then
