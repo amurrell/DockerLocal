@@ -30,6 +30,7 @@ site-*
 !site-db
 !site-logs
 !site-ngrok
+ssl-*.pem
 
 # OS generated files #
 ######################
