@@ -54,6 +54,7 @@ RUN	apt-get update && \
 	apt-get -y install phpPHP_VERSION-intl && \
 	apt-get -y install phpPHP_VERSION-bcmath && \
 	apt-get -y install phpPHP_VERSION-redis && \
+	apt-get -y install phpPHP_VERSION-xdebug && \
 	apt-get -y install phpPHP_VERSION-gd
 
 RUN pear update-channels
@@ -63,6 +64,13 @@ RUN pecl uninstall -r redis
 
 RUN pecl -d php_suffix=PHP_VERSION install yaml-2.2.1
 RUN pecl uninstall -r yaml-2.2.1
+
+# configure xdebug
+RUN echo "[xdebug]" >> /etc/php/PHP_VERSION/fpm/php.ini
+RUN echo "xdebug.mode=develop,debug" >> /etc/php/PHP_VERSION/fpm/php.ini
+RUN echo "xdebug.client_host=host.docker.internal" >> /etc/php/PHP_VERSION/fpm/php.ini
+RUN echo "xdebug.start_with_request=yes" >> /etc/php/PHP_VERSION/fpm/php.ini
+RUN echo "xdebug.log=/tmp/xdebug.log" >> /etc/php/PHP_VERSION/fpm/php.ini
 
 # export var for nano to work in command line
 ENV TERM xterm
