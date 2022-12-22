@@ -17,6 +17,10 @@ DEFAULT_NGINX_FILE="../nginx.site.conf"
 NGINX_FILE_CUSTOM="../nginx.site.custom.conf"
 NGINX_FILE_COMPUTED="../nginx.site.computed.conf"
 
+DEFAULT_XDEBUG_FILE="../xdebug.ini"
+XDEBUG_FILE_CUSTOM="../xdebug.custom.ini"
+XDEBUG_FILE_COMPUTED="../xdebug.computed.ini"
+
 DEFAULT_PROXY_DATABASES_FILE="../../../ProxyLocal/databases.yml"
 DEFAULT_DOCKER_DATABASES_FILE="../databases.yml"
 
@@ -25,6 +29,7 @@ CUSTOM_DOCKERFILE_FILE="../Dockerfile-template-custom"
 DOCKERFILE_COMPUTED="../Dockerfile-computed"
 
 # Versions
+NVM_VERSION=$(<../versions/nvm-version)
 PHP_VERSION=$(<../versions/php-version)
 DB_IMAGE=$(<../versions/db-image)
 UBUNTU_RELEASE_NAME=$(<../versions/ubuntu-release-name)
@@ -49,6 +54,10 @@ fi
 
 if [ -f ../versions/override-ubuntu-release-name ] && [ ! -z $(<../versions/override-ubuntu-release-name) ]; then
 	UBUNTU_VERSION=$(<../versions/override-ubuntu-release-name)
+fi
+
+if [ -f ../versions/override-nvm-version ] && [ ! -z $(<../versions/override-nvm-version) ]; then
+    NVM_VERSION=$(<../versions/override-nvm-version)
 fi
 
 # Process Arguments:
@@ -204,7 +213,7 @@ else
 
     # if proxylocal, then we have a site name. lets make a ssl cert for it, if it doesnt exist
     if [ ! -f "../docker-${SITE_DOMAIN}-cert.pem" ]; then
-        
+
         # Now create ssl certs for each site
         openssl req -x509 -keyout key.pem -out cert.pem -sha256 \
             -days 365 -nodes \
@@ -415,6 +424,21 @@ sed -i'.bak' "s:WEB_SERVER_ROOT:${WEB_SERVER_ROOT}:g;" $NGINX_FILE_COMPUTED
 sed -i'.bak' "s/SOCKET_PORT/${SOCKET_PORT}/g;" $NGINX_FILE_COMPUTED
 rm "../nginx.site.computed.conf.bak"
 
+
+# XDEBUG
+
+# xdebug custom and computed files
+if [ -f "${XDEBUG_FILE_CUSTOM}" ]; then
+ DEFAULT_XDEBUG_FILE="../xdebug.custom.ini"
+fi
+
+# remove previous computed file; regenerate computed
+if [ -f  "${XDEBUG_FILE_COMPUTED}" ]; then
+    rm $XDEBUG_FILE_COMPUTED
+fi
+
+cp $DEFAULT_XDEBUG_FILE $XDEBUG_FILE_COMPUTED
+
 # Final checks for behavior
 
 ## NGROK
@@ -434,6 +458,7 @@ cp $DOCKERFILE_FILE $DOCKERFILE_COMPUTED
 sed -i'.bak' "s/PHP_VERSION/${PHP_VERSION}/g;" $DOCKERFILE_COMPUTED
 sed -i'.bak' "s/UBUNTU_VERSION/${UBUNTU_VERSION}/g;" $DOCKERFILE_COMPUTED
 sed -i'.bak' "s/UBUNTU_RELEASE_NAME/${UBUNTU_RELEASE_NAME}/g;" $DOCKERFILE_COMPUTED
+sed -i'.bak' "s/NVM_VERSION/${NVM_VERSION}/g;" $DOCKERFILE_COMPUTED
 
 rm "${DOCKERFILE_COMPUTED}.bak"
 
@@ -482,7 +507,7 @@ fi
 
 ## SSH into web as www-data
 if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'web' ]; then
-    sudo docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 bash -c 'cd /var/www/site && su -s /bin/bash -l www-data -m'
+    sudo docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 bash -c 'cd /var/www/site && sudo -H -u www-data bash'
     exit 1
 fi
 
@@ -521,6 +546,11 @@ CUR_UID=$(echo $UID)
 USERMOD_COMMAND="usermod -u ${CUR_UID} www-data"
 echo "going to run ./site-ssh"
 ./site-ssh -p="$WEB_PORT" -h=web -c="${USERMOD_COMMAND}"
+
+# Install nvm pm2 if ecosystem.config.js exists
+if [ -f "../ecosystem.config.js" ]; then
+    ./site-nvmpm2
+fi
 
 # Network is up; handle nginx if site is up
 if [ ! "${PROXYLOCAL_NETWORK}" == '' ] && [ ! "$SITE_DOWN" ] && [ ! "$SITE_DOMAIN" == '' ]; then

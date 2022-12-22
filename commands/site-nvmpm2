@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# ./site-ssh -h=web -c="cd /var/www/site && cd ../ && ./nvm-pm2.sh"
+
+# Install nvm not as root anymore, but as www-data
+./site-ssh -h=web -c="sudo -H -u www-data bash -ci \"cd /var/www/ && ./nvm-pm2.sh\""

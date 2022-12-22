@@ -65,18 +65,17 @@ RUN pecl uninstall -r redis
 RUN pecl -d php_suffix=PHP_VERSION install yaml-2.2.1
 RUN pecl uninstall -r yaml-2.2.1
 
-# configure xdebug
-RUN echo "[xdebug]" >> /etc/php/PHP_VERSION/fpm/php.ini
-RUN echo "xdebug.mode=develop,debug" >> /etc/php/PHP_VERSION/fpm/php.ini
-RUN echo "xdebug.client_host=host.docker.internal" >> /etc/php/PHP_VERSION/fpm/php.ini
-RUN echo "xdebug.start_with_request=yes" >> /etc/php/PHP_VERSION/fpm/php.ini
-RUN echo "xdebug.log=/tmp/xdebug.log" >> /etc/php/PHP_VERSION/fpm/php.ini
+# add xdebug config settings
+ADD xdebug.computed.ini /etc/php/PHP_VERSION/mods-available/xdebug.ini
 
 # export var for nano to work in command line
 ENV TERM xterm
 
 # Set workdir
 WORKDIR /var/www/
+
+# Setup a bashrc for www-data
+RUN cp /etc/skel/.bashrc /var/www/.bashrc
 
 # Add site directory
 RUN mkdir /var/www/site
@@ -99,9 +98,6 @@ RUN echo 'alias brc="source /root/.bashrc"' >> /root/.bashrc
 # Copy a configuration file from the current directory
 ADD php7-fpm.site.custom.conf /etc/php/PHP_VERSION/fpm/pool.d
 
-# Copy the nvm-pm2 script over
-ADD nvm-pm2.sh /var/www
-
 # daemon off for php also
 RUN sed -i "/;daemonize = .*/c\daemonize = no" /etc/php/PHP_VERSION/fpm/php-fpm.conf && \
 	sed -i "/variables_order = .*/c\variables_order = \"EGPCS\"" /etc/php/PHP_VERSION/fpm/php.ini && \
@@ -113,13 +109,21 @@ RUN rm /etc/php/PHP_VERSION/fpm/pool.d/www.conf
 # Adjust www-data
 RUN usermod -u 1000 www-data
 
+# Set ownership on working dir
+RUN chown -R www-data:www-data /var/www/
+
+# Change user
+USER www-data
+
+# Copy the nvm-pm2 script over, run it.
+ADD nvm-pm2.sh /var/www/nvm-pm2.sh
+RUN cd /var/www/ && echo "NVM_VERSION" && ./nvm-pm2.sh
+
+USER root
+
 # Install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# Start memcached?
-#RUN service memcached start
 
 # Set the default command to execute when creating a new container
 # The following runs FPM and removes all its extraneous log output on top of what your app outputs to stdout
 CMD service phpPHP_VERSION-fpm start && service nginx start && /usr/sbin/php-fpmPHP_VERSION -F -O 2>&1 | sed -u 's,.*: \"\(.*\)$,\1,'| sed -u 's,"$,,' 1>&1
-# CMD service phpPHP_VERSION-fpm start && service nginx start

@@ -10,6 +10,7 @@ Dockerfile-template-custom
 port
 database
 nginx.site.custom.conf
+xdebug.custom.ini
 web-server-root
 ecosystem.config.js
 versions/override*
@@ -21,6 +22,7 @@ data/custom/*.cnf
 docker-compose-custom.yml
 php7-fpm.site.custom.conf
 nginx.site.computed.conf
+xdebug.computed.ini
 env-custom.yml
 *.bak
 site-*
@@ -30,6 +32,7 @@ site-*
 !site-db
 !site-logs
 !site-ngrok
+!site-nvmpm2
 ssl-*.pem
 
 # OS generated files #

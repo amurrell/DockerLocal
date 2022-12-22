@@ -3,13 +3,15 @@
 P=false
 E=false
 A=false
+X=false
 
-while getopts ":peah" option; do
+while getopts ":peahx" option; do
   case $option in
-    h) echo "usage: $0 [-h (help)] [-p (php)] [-e (error)] [-a (access)]"; exit ;;
+    h) echo "usage: $0 [-h (help)] [-p (php)] [-e (error)] [-a (access) [-x (xdebug)]]"; exit ;;
     p) P=true ;;
     e) E=true ;;
     a) A=true ;;
+    x) X=true ;;
   esac
 done
 
@@ -19,6 +21,8 @@ elif [ $A = 'true' ]; then
   tail -f ../logs/access.log
 elif [ $E = 'true' ]; then
   tail -f ../logs/error.log
+elif [ $X = 'true' ]; then
+  tail -f ../logs/xdebug.log
 else
   tail -f ../logs/*.log
 fi

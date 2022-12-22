@@ -39,6 +39,7 @@ You can configure the following:
     - [Checking Logs](#checking-logs)
     - [Database Commands](#database-commands)
     - [SSH into containers](#ssh-into-the-containers)
+    - [NVM-PM2 - restart pm2](#site-nvmpm2)
     - [Share your site](#share-your-site)
 - [Configuration Files](#configuration-files)
     - [version overrides](#version-overrides)
@@ -46,6 +47,7 @@ You can configure the following:
     - [port](#dockerlocalport)
     - [web-server-root](#dockerlocalweb-server-root)
     - [nginx.site.custom.conf](#dockerlocalnginxsitecustomconf)
+    - [xdebug.custom.ini](#dockerlocalxdebugcustomini)
     - [database](#dockerlocaldatabase)
     - [databases.yml](#dockerlocaldatabasesyml)
     - [Dockerfile-template](#dockerlocaldockerfile-template)
@@ -53,8 +55,14 @@ You can configure the following:
     - [env-example.yml, env.yml](#dockerlocalenv-exampleyml-envyml)
     - [php7-fpm.site.conf](#dockerlocalphp7-fpmsiteconf)
     - [ecosystem.config.js](#dockerlocalecosystemconfigjs)
+        - [nvm-pm2.sh script](#nvm-pm2-script)
+        - [Accessing pm2 directly](#accessing-pm2-directly)
+        - [PM2 + Laravel Horizon](#pm2--laravel-horizon)
+        - [PM2 + Laravel Horizon + XDebug](#pm2--laravel-horizon--xdebug)
 - [Add Database cnf files](#database-cnf-files)
 - [Install NVM-PM2](#install-nvm-pm2)
+- [How to use Xdebug](#use-xdebug)
+    - [disable xdebug](#turn-off-xdebug)
 - [Install ProxyLocal](#install-proxylocal)
 
 ---
@@ -67,9 +75,9 @@ You can configure the following:
 
 #### Using MsSQL/SQLsvr?
 
-DockerLocal does not support mssql/sqlsvr by default anymore - because it's not compatible with macs using m1 chips (docker does not support). 
+DockerLocal does not support mssql/sqlsvr by default anymore - because it's not compatible with macs using m1 chips (docker does not support).
 
-To enable MsSQL, use a custom Dockerfile. We have created a template you can copy with necessary packages: 
+To enable MsSQL, use a custom Dockerfile. We have created a template you can copy with necessary packages:
 
 ```
 cp Dockerfile-template-use-mssql-example Dockerfile-template-custom
@@ -339,16 +347,49 @@ Requires Ngrok
 
 [↑](#contents)
 
-----
+---
+
+### site-nvmpm2
+
+You can use nvm (at a [specific version](#version-overrides)) and pm2 (globally installed) with DockerLocal - they are already installed via the [`Dockerfile-Template`](#dockerlocaldockerfile-template).
+
+If a [`DockerLocal/ecosystem.config.js`](#dockerlocalecosystemconfigjs) file exists, which is a configuration file for pm2, then also the [`site-up`](#ex-basic) command will `pm2 start` for you.
+
+Additionally, running `./site-nvmpm2` manually will trigger a `pm2 restart all` if the ecosystem file exists.
+
+Often times, you need to restart pm2 servers to catch changes to the code that is running inside the queues.
+
+Eg. Laravel jobs will need you to reload workers (or horizon) after making changes to the code. Running `./site-nvmpm2` will `pm2 restart all`.
+
+**Example: Restart all servers**
+
+```
+cd DockerLocal/commands
+./site-nvmpm2
+```
+
+**Example: Manually access pm2 commands**
+
+```
+cd DockerLocal/commands
+./site-ssh -h=web
+cd ~
+pm2 list all
+```
+
+[↑](#contents)
+
+---
 
 ## Configuration Files
 
 ### Version Overrides
 
 You can use the defaults or choose a different version for:
-- **ubuntu** & **php** versions in the `Dockerfile-template`. Variables (used in the file) are:
+- **ubuntu** & **php** & **nodejs** versions in the `Dockerfile-template`. Variables (used in the file) are:
     - UBUNTU_VERSION
     - PHP_VERSION
+    - NVM_VERSION
 - **mysql or mariadb** version in `docker-compose-custom.yml` for the mysql image. Variable (used in the file) is:
     - DB_IMAGE
 
@@ -365,23 +406,25 @@ DockerLocal
       > 20.04
     - db-image
       > mariadb:10.5.8
+    - nvm-version (nodejs version)
+      > 16.14.2
 ```
 
 If you `cat versions/php-version` you'll see the contents are just the version:
 
 ```
-7.4
+8.0
 ```
 
 You can overide any of these by copying the file and renaming to prepend override. Eg.
 
 ```
-echo "7.3" > versions/override-php-version
+echo "7.4" > versions/override-php-version
 ```
 
 #### Changing existing DB image version
 
-If you have an **existing database with data in it** using one image (eg. mysql) and you plan to switch to another (eg. mariadb), then you will need to backup your database, remove the docker volume, re-import your data. 
+If you have an **existing database with data in it** using one image (eg. mysql) and you plan to switch to another (eg. mariadb), then you will need to backup your database, remove the docker volume, re-import your data.
 
 **Note:** This is not an issue if you are changing the version of the same db image type (eg. mariadb:10.5.8 -> mariadb:10.6).
 
@@ -458,6 +501,22 @@ You can create this file initially with:
 The first time you run that, it will create your configuration file. After that, it will only override that file if you pass -w again. To permanently change it, do so in the configuration file.
 
 To confirm that your path is loaded correctly, you can check your [`DockerLocal\nginx.site.computed.conf`](#dockerlocalnginxsitecomputedconf) file that is generated from running `./site-up`. You should see the `root YOURPATH` line in your nginx server block.
+
+[↑](#contents)
+
+---
+
+### DockerLocal/xdebug.custom.ini
+
+Use the file `xdebug.custom.ini` to override `xdebug.ini`. If you don't have it, create it. Like all overriding/custom configuration, it will not be version controlled.
+
+Your custom file (or the default file if no custom is set) will be computed into `xdebug.computed.ini` by the `site-up` command and then referenced in the `Dockerfile-Template` to add xdebug config to your project.
+
+#### Turn off xdebug
+
+If you want to turn off xdebug, change the line `xdebug.mode=develop,debug` to `xdebug.mode=off` in the file `DockerLocal/xdebug.custom.ini` (if you don't have that file, create it by copying `DockerLocal/xdebug.ini`). After changing this custom file, always run `./site-up` again.
+
+You can find information about [how to use xdebug here](#use-xdebug).
 
 [↑](#contents)
 
@@ -580,27 +639,95 @@ If you need to install any other php libraries or modify this template beyond th
 
 ---
 
-### DockerLocal/ecosystem.config.js
+## DockerLocal/ecosystem.config.js
 
-This file is a special configuration file for using with pm2, a process manager. PM2 is useful for projects that have workers, like laravel worker queues.
+This file is a special configuration file for pm2, a process manager and npm package.
 
-You can take advantage of the `DockerLocal\nvm-pm2` shell command that will install nvm and pm2 for you.
+PM2 is useful for projects that have workers, running on queues using CLI - typically asynchronous. An example is laravel worker queues for jobs (or running them through laravel horizon).
 
-Here's how:
+#### nvm-pm2 script
+
+PM2 is included with DockerLocal via the `nvm-pm2.sh` script that is ran by both the [`Dockerfile-Template`](#dockerlocaldockerfile-template) && [`site-up`](#ex-basic) command after the docker containers are booted.
+
+- The **first** call installs nvm at the [`nvm-version`](#version-overrides) (node js version). It also installs pm2 globablly.
+- The **second** call, from [`site-up`](#ex-basic) will `pm2 start` if you have a `DockerLocal/ecosystem.config.js`
+- You can **manually call it** any time with [`./site-nvmpm2`](#site-nvmpm2) in the [`DockerLocal/commands`](#commands) folder, which will basically `pm2 restart all`, if ecosystem.config.js is present.
+
+To access commands directly, see next section, [Accessing pm2 directly](#accessing-pm2-directly).
+
+For help with the contents of ecosystem.config.js, see:
+
+- [PM2 + Laravel Horizon](#pm2--laravel-horizon)
+- [PM2 + Laravel Horizon + XDebug](#pm2--laravel-horizon--xdebug)
+- Perform your own google searches, since this is a configuration for PM2 specifically.
+
+[↑](#contents)
+
+---
+
+### Accessing pm2 directly
+
+You can `site-ssh` to access pm2 commands directly.
 
 ```
-./site-ssh -h=webroot
-cd /var/www
-./nvm-pm2
-
-# logout
-
-# log back in (nvm will be sourced in your profile now)
-./site-ssh -h=webroot
-pm2 start
+./site-ssh -h=web
+cd ~
+pm2 list all
 ```
 
-> **Note**: You have to run this stuff above every time you power up your containers. You will also want to re-run pm2 (eg pm2 restart) when you've made changes to your code that would affect these queues.
+[↑](#contents)
+
+---
+
+### PM2 + Laravel Horizon
+
+If you are planning to use pm2 to run horizon, here's an example configuration for that:
+
+```json
+{
+      name: "laravel-horizon",
+      cwd: "./site/app",
+      interpreter: "php",
+      script_path: "/var/www/site/app/artisan",
+      script: "artisan",
+      args: "horizon",
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "1G",
+      merge_logs: true,
+      out_file: "/var/www/site/DockerLocal/logs/horizon.log",
+      error_file: "/var/www/site/DockerLocal/logs/horizon.log",
+      log_date_format: "MM/DD/YYYY HH:mm:ss",
+    }
+```
+
+[↑](#contents)
+
+---
+
+### PM2 + Laravel Horizon + XDebug
+
+If you are wanting to use xdebug to monitor CLI running queue workers eg. in laravel via horizon, I caution that horizon runs every second which may become a very difficult testing environment... but it can be done. Here's an example ecosystem file entry to accomplish running xdebug on horizon via pm2.
+
+```jsonc
+{
+    name: "xdebug-horizon",
+    cwd: "./site/app",
+    interpreter: "php",
+    script_path: "/var/www/site/app/artisan",
+    script: "artisan",
+    args: "-dxdebug.remote_autostart=1 -dxdebug.remote_host=host.docker.internal -dxdebug.remote_port=9000 -dxdebug.remote_enable=1 horizon",
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: "1G",
+    merge_logs: true,
+    out_file: "/var/www/site/DockerLocal/logs/horizon.log",
+    error_file: "/var/www/site/DockerLocal/logs/horizon.log",
+    log_date_format: "MM/DD/YYYY HH:mm:ss",
+},
+```
 
 [↑](#contents)
 
@@ -608,7 +735,7 @@ pm2 start
 
 ## Install nvm-pm2
 
-You can use pm2 with this project, but it's a bit more manual. 
+You can use pm2 with this project, but it's a bit more manual.
 
 Look at the documentation for the configuration file [DockerLocal/ecosystem.config.js](#dockerlocalecosystemconfigjs) for more information on how it install nvm-pm2 and setup config.
 
@@ -650,6 +777,95 @@ volumes:
 ```
 
 [↑](#contents)
+
+---
+
+## Use xdebug
+
+Xdebug is a debugging tool that communicates with your IDE while listening to incoming requests to your application. It does all this on another `localhost:<port>` and with configuration. This means:
+
+- your web application & server will need necessary packages - eg. php-xdebug.
+- your web application / server will need necessary configuration - eg. in xdebug.ini (custom configuration available in [xdebug.custom.ini](#dockerlocalxdebugcustomini))
+- your IDE will need an extension installed so that the debugger and the IDE can communicate
+- your IDE may need configuration on how to connect to your debugger - eg. launch.json in vscode
+
+So the first two items on the list are solved by DockerLocal by default!
+
+- The `Dockerfile-template` has installed the php-xdebug package for your version.
+
+- It also added the `xdebug.computed.ini` to appropriate location in the container. If you want to change settings, [read about using custom configuration file xdebug.custom.ini](#dockerlocalxdebugcustomini), which includes how to disable xdebug.
+
+### Xdebug with VScode
+
+To use xdebug with vscode & DockerLocal, simply:
+
+1. Install the xdebugging extension for your IDE - eg. vscode needs a PHP X-debug extension if using a php debugger. eg. extension id: xdebug.php-debug
+1. If you don't yet have a hidden  `.vscode` folder ("hidden" is indicated by leading `.`) - add one to your root repo `<your-project>/.vscode` so that it looks something like this:
+
+    ```
+    - your-project
+        - .vscode
+        - DockerLocal
+        - html
+            - your-code
+    ```
+
+1. add a `launch.json` file into this `.vscode` folder, or add just the configuration entry if you have a launch.json file already.
+
+    Example: `launch.json`
+
+    ```json
+    {
+        // Use IntelliSense to learn about possible attributes.
+        // Hover to view descriptions of existing attributes.
+        // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Listen for Xdebug",
+                "type": "php",
+                "request": "launch",
+                "port": 9003,
+                "pathMappings": {
+                "/var/www/site": "${workspaceFolder}"
+                }
+            }
+        ]
+    }
+    ```
+
+    Explanations of the configuration:
+
+    - The `/var/www/site` in `"/var/www/site": "${workspaceFolder}"` references the path to your running application within DockerLocal web container - where php is running. `cd DockerLocal/commands && ./site-ssh -h=web` and you are in that same directory.
+    - The `${workspaceFolder}` portion references the IDE vscode's folder for the project.
+1. If you want to add `extensions.json` in your `.vscode` folder, so that they can be recommended to anyone who runs your code:
+
+    ```json
+    {
+        "recommendations": [
+            "xdebug.php-debug"
+        ]
+    }
+    ```
+
+### Use debugger in vscode
+
+So once everything is setup, go to your debugger tab in vscode (looks like a play button with bug over it).
+
+In the top left - it says "Run and debug" with a dropdown. In the dropdown, use the "Listen For Xdebug" which is going to mirror what you wrote in your launch.json if that is setup correctly.
+
+Click the Play button. Now some controls appear centered at the top of vscode. It is "listening". Go trigger requests - visit your website, hit postman, whatever to hit your site.
+
+It will stop at any break points and let you look at variables. You can step back, step forward, or click deeper into functions.
+
+
+### Check logs
+
+It's easy to see the xdebug logs due to the configuration setup in `Dockerfile-template` - we put the logs at `/var/www/site/DockerLocal/logs/xdebug.log`
+
+You can use the DockerLocal command `./site-logs -x` to tail the x debug log as a shortcut for (tail -f xdebug.log)
+
+Note that it will say `Could not connect to debugging client.` when you are not running the debugger in your IDE. Simply start a debug session and it will connect when you hit your project.
 
 ---
 
