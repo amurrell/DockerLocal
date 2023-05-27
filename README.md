@@ -37,6 +37,7 @@ You can configure the following:
 - [Commands](#commands)
     - [Shut Down](#shut-down)
     - [Checking Logs](#checking-logs)
+    - [NPM Command](#npm-command)
     - [Database Commands](#database-commands)
     - [SSH into containers](#ssh-into-the-containers)
     - [NVM-PM2 - restart pm2](#site-nvmpm2)
@@ -256,6 +257,29 @@ Ex: In your terminal, in `DockerLocal/commands`:
 ./site-logs -h  # Help to find what the switches are
 ```
 
+
+[↑](#contents)
+
+---
+
+### NPM Command
+
+If you have a nested project that uses nvm & npm to build, you can run `./site-npm` with some options `-p=<path>` and `-n=<commands>`.
+
+This makes it easier to install & run npm commands from the DockerLocal/commands folder.
+
+```
+## where 'my-app' is a folder at the root of your project.
+## inside your container it would be at /var/www/site/my-app
+./site-npm -p="my-app" -n="npm install && npm run development"
+```
+
+**Configuration Helper:** To save you time from having to specify the path all the time, save a file in `DockerLocal/app-path` with the path in it. eg. my-app
+
+```
+# from your terminal, at root of project:
+echo "my-app" > DockerLocal/app-path
+```
 
 [↑](#contents)
 

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+CURRENT_DIR=$(pwd)
+APP_PATH=''
+APP_PATH_FILE="../app-path"
+
+if [ -f  "${WEB_SERVER_ROOT_FILE}" ]; then
+  WEB_SERVER_ROOT=$(<$WEB_SERVER_ROOT_FILE)
+fi
+
+if [ -f  "${APP_PATH_FILE}" ]; then
+  APP_PATH=$(<$APP_PATH_FILE)
+fi
+
+# get options
+P=$(sed -e 's#.*\-p=\([^\-]*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9")
+N=$(sed -e 's#.*\-n=\(.*\).*#\1#' <<< "$1$2$3$4$5$6$7$8$9") # this one is special, bc file name might have dashes
+
+## p - eg. "app/app/resources/admin" relative to /var/www/site/
+if [ ! "$P" == "$1$2$3$4$5" ]; then
+    APP_PATH=$P
+fi
+
+## n - eg. "npm run development" or "npm install"
+if [ ! "$N" == "$1$2$3$4$5" ]; then
+    NPM_CMD=$N
+fi
+
+# If PATH is empty, error
+if [ -z "$APP_PATH" ]; then
+    printf "🙈 Missing Command: -p=<APP_PATH> - App Path is required. Eg. -p=<path-relative-to:/var/www/site/>. You can store in ../app-path to avoid including this every time.\n"
+    exit
+fi
+
+# If N is empty, error
+if [ -z "$NPM_CMD" ]; then
+    printf "🙈 Missing Command: -n=\"<NPM_CMD>\" - NPM_CMD is required. Eg. -n=\"npm run development\" or -n=\"npm install\"\n"
+    exit
+fi
+
+NPM_CMD="nvm use && ${NPM_CMD}"
+
+printf "Going to run ./site-nvmpm2 first, to ensure the container has nvm installed\n"
+./site-nvmpm2
+
+printf "Going to ./site-ssh and run: $NPM_CMD\n"
+./site-ssh -h=web -c="cd /var/www/site/${APP_PATH} && sudo -H -u www-data bash -ci \"${NPM_CMD}\""
+

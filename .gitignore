@@ -16,6 +16,7 @@ ecosystem.config.js
 versions/override*
 data/custom/*.cnf
 !data/custom/options.cnf
+app-path
 
 # DockerLocal Generated Files #
 ######################
@@ -33,6 +34,7 @@ site-*
 !site-logs
 !site-ngrok
 !site-nvmpm2
+!site-npm
 ssl-*.pem
 
 # OS generated files #
