@@ -466,7 +466,7 @@ Here are the steps:
 
     ```
     [sudo] docker volume ls
-    see which one it is... eg. dockerlocal{PORT}_mysql-data-{PORT}
+    see which one it is... eg. dockerlocal{PORT}-mysql-data-{PORT}
     [sudo] docker volume rm <name-of-volume>
     ```
 
@@ -950,4 +950,4 @@ databases:
 Where the databases example_come, another_example_com, etc are remote and can all be accessed by the same host, user, pass, and port.
 If you need specifics, you can still create a databases.yml per site and keep it in DockerLocal.
 
-The Numbered Keys in that yaml represent the localhost:PORT and therefore corresponding mysql container to import the remote db into: dockerlocal3001_mysql_1
+The Numbered Keys in that yaml represent the localhost:PORT and therefore corresponding mysql container to import the remote db into: dockerlocal3001-mysql-1

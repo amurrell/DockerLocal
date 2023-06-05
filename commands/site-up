@@ -209,7 +209,7 @@ else
     SITE_DOMAIN_OR_DOCKER_HOST="${SITE_DOMAIN}"
     # Check if proxylocal is running...
     PROXYLOCAL_NETWORK=$(eval docker network ls | grep "proxylocal_docker-proxy-net")
-    PROXYLOCAL_CONTAINER=$(eval docker ps | grep "proxylocal_proxy_1")
+    PROXYLOCAL_CONTAINER=$(eval docker ps | grep "proxylocal-proxy-1")
 
     # if proxylocal, then we have a site name. lets make a ssl cert for it, if it doesnt exist
     if [ ! -f "../docker-${SITE_DOMAIN}-cert.pem" ]; then
@@ -473,7 +473,7 @@ sed -i'.bak' "s/REDIS_PORT/${REDIS_PORT}/g;" $FILE
 sed -i'.bak' "s/DOCKERFILE/Dockerfile-computed/g;" $FILE
 
 sed -i'.bak' "s/DATABASE_NAME/${DB_NAME}/g;" $FILE
-sed -i'.bak' "s/DATABASE_HOST/${DOCKER_NAME}_mysql_1/g;" $FILE
+sed -i'.bak' "s/DATABASE_HOST/${DOCKER_NAME}-mysql-1/g;" $FILE
 sed -i'.bak' "s/DATABASE_PORT/${MYSQL_PORT}/g;" $FILE
 
 sed -i'.bak' "s/SSL_PORT/${SSL_PORT}/g;" $FILE
@@ -501,37 +501,37 @@ if [ "$SSH_COMMAND" != '' ]; then
 
     # Run the command. the /bin/bash -i makes the shell relative to inside the
     # container so that it's able to see aliases and the bashrc
-    docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash -i -c "${SSH_COMMAND}"
+    docker exec -t -i "${DOCKER_NAME}"-"$SITE_SSH"-1 /bin/bash -i -c "${SSH_COMMAND}"
     exit 1
 fi
 
 ## SSH into web as www-data
 if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'web' ]; then
-    docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 bash -c 'cd /var/www/site && sudo -H -u www-data bash'
+    docker exec -t -i "${DOCKER_NAME}"-"$SITE_SSH"-1 bash -c 'cd /var/www/site && sudo -H -u www-data bash'
     exit 1
 fi
 
 ## SSH into web as root
 if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'webroot' ]; then
-    docker exec -t -i "${DOCKER_NAME}"_web_1 /bin/bash
+    docker exec -t -i "${DOCKER_NAME}"-web-1 /bin/bash
     exit 1
 fi
 
 ## SSH into mysql
 if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'mysql' ]; then
-    docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash -c "mysql -u root -p1234"
+    docker exec -t -i "${DOCKER_NAME}"-"$SITE_SSH"-1 /bin/bash -c "mysql -u root -p1234"
     exit 1
 fi
 
 ## SSH into mysql
 if [ "$SITE_SSH" ] && [ "$SITE_SSH" == 'mysqlroot' ]; then
-    docker exec -t -i "${DOCKER_NAME}"_mysql_1 /bin/bash
+    docker exec -t -i "${DOCKER_NAME}"-mysql-1 /bin/bash
     exit 1
 fi
 
 ## SSH into other containers
 if [ "$SITE_SSH" ]; then
-    docker exec -t -i "${DOCKER_NAME}"_"$SITE_SSH"_1 /bin/bash
+    docker exec -t -i "${DOCKER_NAME}"-"$SITE_SSH"-1 /bin/bash
     exit 1
 fi
 
@@ -539,6 +539,8 @@ fi
 # Not sure when we would want to take it down but leaving here incase we do at some point.
 # docker-compose -p "$DOCKER_NAME" -f "$FILE" down
 # Up
+echo "going to run docker-compose up\n"
+echo "docker-compose -p ${DOCKER_NAME} -f ${FILE} up --build -d\n"
 docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
 
 # right after its up change www-data user to match cur user
@@ -589,7 +591,7 @@ if [ "$CREATE_DB" ]; then
 fi
 
 if [ "$DB_COMMAND" ]; then
-    docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+    docker exec ${DOCKER_NAME}-mysql-1 bash -c "${DB_COMMAND}"
     ./site-db -p=${WEB_PORT} -f=${DB_SAVE_FILE_BASENAME}
     exit 1
 fi

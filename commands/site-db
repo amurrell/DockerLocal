@@ -51,7 +51,7 @@ if [ ! "$C" == "$1$2$3$4$5$6$7$8$9" ]; then
     DB_CREATE_DB="CREATE DATABASE ${C};"
     DB_COMMAND="echo \"${DB_CREATE_DB}\" | mysql -u root -p1234"
 
-    sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+    sudo docker exec ${DOCKER_NAME}-mysql-1 bash -c "${DB_COMMAND}"
 
     exit 1
 fi
@@ -60,7 +60,7 @@ if [ ! "$I" == "$1$2$3$4$5$6$7$8$9" ] && [ ! "F" == "$1$2$3$4$5$6$7$8$9" ]; then
     DOCKER_NAME=$(echo "dockerlocal${P}")
     DB_COMMAND="mysql -u root -p1234 ${I} < /docker-entrypoint-initdb.d/${F}"
 
-    sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+    sudo docker exec ${DOCKER_NAME}-mysql-1 bash -c "${DB_COMMAND}"
 
     exit 1
 fi
@@ -69,7 +69,7 @@ if [ ! "$F" == "$1$2$3$4$5$6$7$8$9" ] && [ "$I" == "$1$2$3$4$5$6$7$8$9" ]  ; the
     DOCKER_NAME=$(echo "dockerlocal${P}")
     DB_COMMAND="mysql -u root -p1234 < /docker-entrypoint-initdb.d/${F}"
 
-    sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+    sudo docker exec ${DOCKER_NAME}-mysql-1 bash -c "${DB_COMMAND}"
 
     exit 1
 fi
@@ -85,7 +85,7 @@ if [ ! "$D" == "$1$2$3$4$5$6$7$8$9" ]; then
 	    DB_COMMAND="mysqldump -u root -p1234 ${D} --add-drop-database -B > ${DB_SAVE_FILE_INSIDE}"
 	fi
 
-	sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+	sudo docker exec ${DOCKER_NAME}-mysql-1 bash -c "${DB_COMMAND}"
 	exit 1
     fi
 
@@ -134,7 +134,7 @@ if [ ! "$D" == "$1$2$3$4$5$6$7$8$9" ]; then
     DB_SAVE_FILE_INSIDE="/docker-entrypoint-initdb.d/${DB_NAME}.sql.dump"
     DB_COMMAND="mysqldump -u root -p1234 ${DB_NAME} > ${DB_SAVE_FILE_INSIDE}"
 
-    sudo docker exec ${DOCKER_NAME}_mysql_1 bash -c "${DB_COMMAND}"
+    sudo docker exec ${DOCKER_NAME}-mysql-1 bash -c "${DB_COMMAND}"
 
     exit 1
 fi
