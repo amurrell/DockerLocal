@@ -62,8 +62,8 @@ RUN pear update-channels
 RUN pecl -d php_suffix=PHP_VERSION install redis
 RUN pecl uninstall -r redis
 
-RUN pecl -d php_suffix=PHP_VERSION install yaml-2.2.1
-RUN pecl uninstall -r yaml-2.2.1
+RUN pecl -d php_suffix=PHP_VERSION install yaml-YAML_VERSION
+RUN pecl uninstall -r yaml-YAML_VERSION
 
 # add xdebug config settings
 ADD xdebug.computed.ini /etc/php/PHP_VERSION/mods-available/xdebug.ini

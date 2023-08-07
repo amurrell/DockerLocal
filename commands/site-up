@@ -34,6 +34,7 @@ PHP_VERSION=$(<../versions/php-version)
 DB_IMAGE=$(<../versions/db-image)
 UBUNTU_RELEASE_NAME=$(<../versions/ubuntu-release-name)
 UBUNTU_VERSION=$(<../versions/ubuntu-version)
+YAML_VERSION=$(<../versions/yaml-version)
 
 # Version overrides
 if [ -f ../versions/override-php-version ] && [ ! -z $(<../versions/override-php-version) ]; then
@@ -52,12 +53,21 @@ if [ -f ../versions/override-ubuntu-release-name ] && [ ! -z $(<../versions/over
 	UBUNTU_RELEASE_NAME=$(<../versions/override-ubuntu-release-name)
 fi
 
-if [ -f ../versions/override-ubuntu-release-name ] && [ ! -z $(<../versions/override-ubuntu-release-name) ]; then
-	UBUNTU_VERSION=$(<../versions/override-ubuntu-release-name)
+if [ -f ../versions/override-ubuntu-version ] && [ ! -z $(<../versions/override-ubuntu-version) ]; then
+	UBUNTU_VERSION=$(<../versions/override-ubuntu-version)
 fi
 
 if [ -f ../versions/override-nvm-version ] && [ ! -z $(<../versions/override-nvm-version) ]; then
     NVM_VERSION=$(<../versions/override-nvm-version)
+fi
+
+# Be magical - If PHP_VERSION is equal to or greater than 8.2, then use YAML_VERSION 2.2.3
+if [ $(echo "${PHP_VERSION} >= 8.2" | bc -l) -eq 1 ]; then
+    YAML_VERSION="2.2.3"
+fi
+
+if [ -f ../versions/override-yaml-version ] && [ ! -z $(<../versions/override-yaml-version) ]; then
+    YAML_VERSION=$(<../versions/override-yaml-version)
 fi
 
 # Process Arguments:
@@ -459,6 +469,7 @@ sed -i'.bak' "s/PHP_VERSION/${PHP_VERSION}/g;" $DOCKERFILE_COMPUTED
 sed -i'.bak' "s/UBUNTU_VERSION/${UBUNTU_VERSION}/g;" $DOCKERFILE_COMPUTED
 sed -i'.bak' "s/UBUNTU_RELEASE_NAME/${UBUNTU_RELEASE_NAME}/g;" $DOCKERFILE_COMPUTED
 sed -i'.bak' "s/NVM_VERSION/${NVM_VERSION}/g;" $DOCKERFILE_COMPUTED
+sed -i'.bak' "s/YAML_VERSION/${YAML_VERSION}/g;" $DOCKERFILE_COMPUTED
 
 rm "${DOCKERFILE_COMPUTED}.bak"
 
