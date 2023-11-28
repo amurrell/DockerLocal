@@ -410,7 +410,7 @@ pm2 list all
 ### Version Overrides
 
 You can use the defaults or choose a different version for:
-- **ubuntu** & **php** & **nodejs** versions in the `Dockerfile-template`. Variables (used in the file) are:
+- **ubuntu** & **php** & **nodejs** & **yaml** versions in the `Dockerfile-template`. Variables (used in the file) are:
     - UBUNTU_VERSION
     - PHP_VERSION
     - NVM_VERSION
@@ -432,6 +432,8 @@ DockerLocal
       > mariadb:10.5.8
     - nvm-version (nodejs version)
       > 16.14.2
+    - yaml-version
+      > 2.2.1 (changes to 2.2.3 when php8.1+)
 ```
 
 If you `cat versions/php-version` you'll see the contents are just the version:

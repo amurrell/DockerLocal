@@ -62,7 +62,7 @@ if [ -f ../versions/override-nvm-version ] && [ ! -z $(<../versions/override-nvm
 fi
 
 # Be magical - If PHP_VERSION is equal to or greater than 8.2, then use YAML_VERSION 2.2.3
-if [ $(echo "${PHP_VERSION} >= 8.2" | bc -l) -eq 1 ]; then
+if [ $(echo "${PHP_VERSION} >= 8.1" | bc -l) -eq 1 ]; then
     YAML_VERSION="2.2.3"
 fi
 
