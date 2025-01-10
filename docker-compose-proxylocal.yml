@@ -20,7 +20,7 @@ services:
             - mysql
             - memcached
         environment:
-            - REDIS_URL=redis://cache
+            - REDIS_URL=redis://redis
         ports:
             - "SOCKET_PORT:6001"
             - "SSL_PORT:433"
