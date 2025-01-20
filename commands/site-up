@@ -494,9 +494,19 @@ sed -i'.bak' "s/DB_IMAGE/${DB_IMAGE}/g;" $FILE
 
 rm "${FILE}.bak"
 
+# Old versions of Docker use docker-compose
+# New versions use docker compose
+# Determine which to use by checking for the legacy command first
+if [ -x "$(command -v docker-compose)" ]; then
+    DOCKER_COMPOSE_COMMAND="docker-compose"
+else
+    DOCKER_COMPOSE_COMMAND="docker compose"
+fi
+
 ## SHUT DOWN
 if [ "$SITE_DOWN" ]; then
-    docker-compose -p "${DOCKER_NAME}" -f "${FILE}" down
+    # eval is needed because DOCKER_COMPOSE_COMMAND could have a space
+    eval "${DOCKER_COMPOSE_COMMAND} -p ${DOCKER_NAME} -f ${FILE} down"
     exit 1
 fi
 
@@ -547,12 +557,11 @@ if [ "$SITE_SSH" ]; then
 fi
 
 # NEED TO UP BEFORE DB
-# Not sure when we would want to take it down but leaving here incase we do at some point.
-# docker-compose -p "$DOCKER_NAME" -f "$FILE" down
 # Up
-echo "going to run docker-compose up\n"
-echo "docker-compose -p ${DOCKER_NAME} -f ${FILE} up --build -d\n"
-docker-compose -p "$DOCKER_NAME" -f "$FILE" up --build -d
+echo "going to run ${DOCKER_COMPOSE_COMMAND} up\n"
+echo "${DOCKER_COMPOSE_COMMAND} -p ${DOCKER_NAME} -f ${FILE} up --build -d\n"
+# Eval is needed because DOCKER_COMPOSE_COMMAND could have a space
+eval "${DOCKER_COMPOSE_COMMAND} -p ${DOCKER_NAME} -f ${FILE} up --build -d"
 
 # right after its up change www-data user to match cur user
 CUR_UID=$(echo $UID)
